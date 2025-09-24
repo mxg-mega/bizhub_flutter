@@ -1,0 +1,178 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import '../../core/config/app_config.dart';
+
+enum ThemeMode { light, dark, system }
+
+class ThemeState {
+  final ThemeMode themeMode;
+  final bool isDarkMode;
+
+  const ThemeState({
+    this.themeMode = ThemeMode.system,
+    this.isDarkMode = false,
+  });
+
+  ThemeState copyWith({
+    ThemeMode? themeMode,
+    bool? isDarkMode,
+  }) {
+    return ThemeState(
+      themeMode: themeMode ?? this.themeMode,
+      isDarkMode: isDarkMode ?? this.isDarkMode,
+    );
+  }
+}
+
+class ThemeNotifier extends StateNotifier<ThemeState> {
+  ThemeNotifier() : super(const ThemeState()) {
+    _loadThemeMode();
+  }
+
+  Future<void> _loadThemeMode() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final themeModeIndex = prefs.getInt(AppConfig.themeModeKey) ?? 2; // Default to system
+      final themeMode = ThemeMode.values[themeModeIndex];
+      
+      state = state.copyWith(themeMode: themeMode);
+      _updateDarkMode(themeMode);
+    } catch (e) {
+      // Use default theme if loading fails
+      state = state.copyWith(themeMode: ThemeMode.system);
+    }
+  }
+
+  Future<void> setThemeMode(ThemeMode themeMode) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt(AppConfig.themeModeKey, themeMode.index);
+      
+      state = state.copyWith(themeMode: themeMode);
+      _updateDarkMode(themeMode);
+    } catch (e) {
+      // Handle error
+    }
+  }
+
+  void _updateDarkMode(ThemeMode themeMode) {
+    bool isDark;
+    
+    switch (themeMode) {
+      case ThemeMode.light:
+        isDark = false;
+        break;
+      case ThemeMode.dark:
+        isDark = true;
+        break;
+      case ThemeMode.system:
+        // TODO: Get system theme
+        isDark = false;
+        break;
+    }
+    
+    state = state.copyWith(isDarkMode: isDark);
+  }
+
+  ThemeData getLightTheme() {
+    return ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.light,
+      primaryColor: AppConfig.primaryColor,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: AppConfig.primaryColor,
+        brightness: Brightness.light,
+      ),
+      appBarTheme: AppBarTheme(
+        backgroundColor: AppConfig.primaryColor,
+        foregroundColor: Colors.white,
+        elevation: 0,
+        centerTitle: true,
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppConfig.primaryColor,
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 12,
+        ),
+      ),
+      cardTheme: CardThemeData(
+        elevation: 2,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
+    );
+  }
+
+  ThemeData getDarkTheme() {
+    return ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.dark,
+      primaryColor: AppConfig.primaryColor,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: AppConfig.primaryColor,
+        brightness: Brightness.dark,
+      ),
+      appBarTheme: AppBarTheme(
+        backgroundColor: Colors.grey[900],
+        foregroundColor: Colors.white,
+        elevation: 0,
+        centerTitle: true,
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppConfig.primaryColor,
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 12,
+        ),
+      ),
+      cardTheme: CardThemeData(
+        elevation: 2,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        color: Colors.grey[800],
+      ),
+    );
+  }
+}
+
+// Providers
+final themeProvider = StateNotifierProvider<ThemeNotifier, ThemeState>((ref) {
+  return ThemeNotifier();
+});
+
+final themeModeProvider = Provider<ThemeMode>((ref) {
+  final themeState = ref.watch(themeProvider);
+  return themeState.themeMode;
+});
+
+final isDarkModeProvider = Provider<bool>((ref) {
+  final themeState = ref.watch(themeProvider);
+  return themeState.isDarkMode;
+});

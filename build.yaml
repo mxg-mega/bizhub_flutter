@@ -1,0 +1,21 @@
+targets:
+  $default:
+    builders:
+      json_serializable:json_serializable:
+        options:
+          # Options for json_serializable
+          include_if_null: false
+          explicit_to_json: true
+          field_rename: snake
+      retrofit_generator:retrofit:
+        options:
+          # Options for retrofit_generator
+          generate_provider: true
+      hive_generator:hive_generator:
+        options:
+          # Options for hive_generator
+          generate_adapter: true
+      riverpod_generator:riverpod_generator:
+        options:
+          # Options for riverpod_generator
+          provider_name_suffix: Provider
