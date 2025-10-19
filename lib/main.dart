@@ -23,15 +23,14 @@ class BizModuleApp extends ConsumerWidget {
   const BizModuleApp({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     final router = ref.watch(routerProvider);
 
     return ScreenUtilInit(
       designSize: const Size(375, 812), // iPhone X design size
       minTextAdapt: true,
       splitScreenMode: true,
-      builder: (context, child) {
-        return MaterialApp.router(
+      builder: (final context, final child) => MaterialApp.router(
           title: AppConfig.appName,
           debugShowCheckedModeBanner: false,
           theme: ThemeData(
@@ -75,8 +74,7 @@ class BizModuleApp extends ConsumerWidget {
             ),
           ),
           routerConfig: router,
-        );
-      },
+        ),
     );
   }
 }

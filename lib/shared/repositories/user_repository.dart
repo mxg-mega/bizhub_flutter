@@ -25,7 +25,7 @@ class UserRepository {
   static Future<void> upsert(UserModel user) async {
     await FirestoreService.setById<UserModel>(
       collectionPath: collectionPath,
-      id: user.id,
+      id: user.uid,
       value: user,
       toJson: (u) => u.toJson(),
       merge: true,

@@ -144,7 +144,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
     state = state.copyWith(isLoading: true, error: null);
 
     final result = await AuthService.updateUserProfile(
-      name: user.name,
+      // TODO: Add role and businessId and fix the name issue
+      name: user.name ?? '',
       photoUrl: user.photoUrl,
     );
 

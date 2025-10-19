@@ -34,6 +34,7 @@ class AppConfig {
   // Storage Keys
   static const String authTokenKey = 'auth_token';
   static const String userDataKey = 'user_data';
+  static const String businessDataKey = 'business_data';
   static const String onboardingCompletedKey = 'onboarding_completed';
   static const String themeModeKey = 'theme_mode';
   static const String languageKey = 'language';

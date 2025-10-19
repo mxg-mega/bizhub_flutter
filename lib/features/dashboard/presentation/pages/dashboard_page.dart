@@ -81,7 +81,8 @@ class DashboardPage extends ConsumerWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            user.name,
+                            // TODO: Add role and businessId and fix the name issue
+                            user.name ?? 'User',
                             style: GoogleFonts.inter(
                               fontSize: 16.sp,
                               fontWeight: FontWeight.w600,

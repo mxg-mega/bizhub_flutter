@@ -25,7 +25,7 @@ class BusinessRepository {
   static Future<void> upsert(BusinessModel business) async {
     await FirestoreService.setById<BusinessModel>(
       collectionPath: collectionPath,
-      id: business.id,
+      id: business.id!,
       value: business,
       toJson: (b) => b.toJson(),
       merge: true,
