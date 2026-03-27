@@ -1,40 +1,44 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/config/app_config.dart';
+import '../../../../shared/presentation/widgets/common_app_bar.dart';
+import '../../../../shared/providers/app_settings_provider.dart';
+import '../../../../shared/providers/auth_provider.dart';
+import '../../../../core/auth/role_permissions.dart';
 
-class SettingsPage extends StatefulWidget {
+class SettingsPage extends ConsumerStatefulWidget {
   const SettingsPage({super.key});
 
   @override
-  State<SettingsPage> createState() => _SettingsPageState();
+  ConsumerState<SettingsPage> createState() => _SettingsPageState();
 }
 
-class _SettingsPageState extends State<SettingsPage> {
-  bool _notificationsEnabled = true;
-  bool _darkModeEnabled = false;
-  bool _biometricEnabled = false;
-  String _selectedLanguage = 'English';
-
+class _SettingsPageState extends ConsumerState<SettingsPage> {
   @override
   Widget build(BuildContext context) {
+    final settings = ref.watch(appSettingsNotifierProvider);
+    final authState = ref.watch(authProvider);
+    final user = authState.user;
+    final business = authState.activeBusiness;
+
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          'Settings',
-          style: GoogleFonts.inter(fontWeight: FontWeight.w600),
-        ),
-        backgroundColor: AppConfig.primaryColor,
-        foregroundColor: Colors.white,
-        elevation: 0,
-      ),
+      appBar: const CommonAppBar(),
       body: SingleChildScrollView(
         padding: EdgeInsets.all(16.w),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // App Settings Section
+            Text(
+              'Settings',
+              style: GoogleFonts.inter(fontSize: 24.sp, fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 24.h),
+            
+            // App Settings Section (Device local)
             _SettingsSection(
               title: 'App Settings',
               children: [
@@ -42,39 +46,56 @@ class _SettingsPageState extends State<SettingsPage> {
                   icon: Icons.notifications,
                   title: 'Push Notifications',
                   subtitle: 'Receive notifications about your business',
-                  value: _notificationsEnabled,
+                  value: settings.notificationsEnabled,
                   onChanged: (value) {
-                    setState(() {
-                      _notificationsEnabled = value;
-                    });
+                    ref.read(appSettingsNotifierProvider.notifier).updateSettings(
+                      settings.copyWith(notificationsEnabled: value),
+                    );
+                  },
+                ),
+                _SettingsSwitch(
+                  icon: Icons.cloud_off,
+                  title: 'Force Offline Mode',
+                  subtitle: 'Pause cloud synchronization',
+                  value: settings.offlineModeEnabled,
+                  onChanged: (value) {
+                    ref.read(appSettingsNotifierProvider.notifier).toggleOfflineMode(value);
                   },
                 ),
                 _SettingsSwitch(
                   icon: Icons.dark_mode,
                   title: 'Dark Mode',
                   subtitle: 'Use dark theme',
-                  value: _darkModeEnabled,
+                  value: settings.themeMode == 'dark',
                   onChanged: (value) {
-                    setState(() {
-                      _darkModeEnabled = value;
-                    });
-                  },
-                ),
-                _SettingsSwitch(
-                  icon: Icons.fingerprint,
-                  title: 'Biometric Login',
-                  subtitle: 'Use fingerprint or face ID',
-                  value: _biometricEnabled,
-                  onChanged: (value) {
-                    setState(() {
-                      _biometricEnabled = value;
-                    });
+                    ref.read(appSettingsNotifierProvider.notifier).updateSettings(
+                      settings.copyWith(themeMode: value ? 'dark' : 'light'),
+                    );
                   },
                 ),
               ],
             ),
 
             SizedBox(height: 24.h),
+
+            // Business Rules Section (Manager/Owner only, synced to Cloud)
+            if (user?.hasPermission(AppPermission.editSettings) ?? false) ...[
+              _SettingsSection(
+                title: 'Business Rules',
+                children: [
+                  _SettingsSwitch(
+                    icon: Icons.assignment_turned_in,
+                    title: 'Require Sales Approval',
+                    subtitle: 'Managers must approve sales before stock deduction',
+                    value: business?.settings?['requireApproval'] ?? false,
+                    onChanged: (value) {
+                      ref.read(authProvider.notifier).updateBusinessSettings({'requireApproval': value});
+                    },
+                  ),
+                ],
+              ),
+              SizedBox(height: 24.h),
+            ],
 
             // Language Section
             _SettingsSection(
@@ -84,13 +105,34 @@ class _SettingsPageState extends State<SettingsPage> {
                   icon: Icons.language,
                   title: 'App Language',
                   subtitle: 'Choose your preferred language',
-                  value: _selectedLanguage,
-                  items: ['English', 'Spanish', 'French', 'German'],
+                  value: settings.language == 'en' ? 'English' : 'Spanish',
+                  items: const ['English', 'Spanish', 'French', 'German'],
                   onChanged: (value) {
-                    setState(() {
-                      _selectedLanguage = value!;
-                    });
+                    ref.read(appSettingsNotifierProvider.notifier).updateSettings(
+                      settings.copyWith(language: value == 'English' ? 'en' : 'es'),
+                    );
                   },
+                ),
+              ],
+            ),
+
+            SizedBox(height: 24.h),
+
+            // Hardware & Design Section
+            _SettingsSection(
+              title: 'Hardware & Design',
+              children: [
+                _SettingsOption(
+                  icon: Icons.receipt_long,
+                  title: 'Receipt Designer',
+                  subtitle: 'Customize how your receipts look',
+                  onTap: () => context.push('/receipt-designer'),
+                ),
+                _SettingsOption(
+                  icon: Icons.print,
+                  title: 'Printer Settings',
+                  subtitle: 'Connect to thermal printers',
+                  onTap: () => context.push('/printer-settings'),
                 ),
               ],
             ),
@@ -152,7 +194,14 @@ class _SettingsSection extends StatelessWidget {
           ),
         ),
         SizedBox(height: 12.h),
-        Card(child: Column(children: children)),
+        Card(
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12.r),
+            side: BorderSide(color: Colors.grey[200]!),
+          ),
+          child: Column(children: children),
+        ),
       ],
     );
   }
@@ -180,7 +229,7 @@ class _SettingsSwitch extends StatelessWidget {
       title: Text(title, style: GoogleFonts.inter(fontWeight: FontWeight.w500)),
       subtitle: Text(
         subtitle,
-        style: GoogleFonts.inter(color: Colors.grey[600]),
+        style: GoogleFonts.inter(color: Colors.grey[600], fontSize: 12.sp),
       ),
       trailing: Switch(
         value: value,
@@ -215,7 +264,7 @@ class _SettingsDropdown extends StatelessWidget {
       title: Text(title, style: GoogleFonts.inter(fontWeight: FontWeight.w500)),
       subtitle: Text(
         subtitle,
-        style: GoogleFonts.inter(color: Colors.grey[600]),
+        style: GoogleFonts.inter(color: Colors.grey[600], fontSize: 12.sp),
       ),
       trailing: DropdownButton<String>(
         value: value,
@@ -249,7 +298,7 @@ class _SettingsOption extends StatelessWidget {
       title: Text(title, style: GoogleFonts.inter(fontWeight: FontWeight.w500)),
       subtitle: Text(
         subtitle,
-        style: GoogleFonts.inter(color: Colors.grey[600]),
+        style: GoogleFonts.inter(color: Colors.grey[600], fontSize: 12.sp),
       ),
       trailing: onTap != null
           ? const Icon(Icons.arrow_forward_ios, size: 16)

@@ -7,9 +7,12 @@ import '../../../../core/config/app_config.dart';
 class ModulesPage extends StatelessWidget {
   const ModulesPage({super.key});
 
+  // TODO: implement a state management solution to manage the module states and settings
+  // this page will allow users to enable or disable modules, and to configure their settings if needed. It will also show the dependencies between modules, and ensure that the required modules are enabled before allowing users to enable dependent modules. The module states and settings should be persisted so that they are retained across app sessions, and they should be easily accessible throughout the app to conditionally show or hide features based on the enabled modules.
+  // for now we only have this page and only hard implemented the UI, but in the future we will need to implement the logic to manage the module states and settings, and to integrate it with the rest of the app to conditionally show or hide features based on the enabled modules.
+
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
+  Widget build(final BuildContext context) => Scaffold(
       appBar: AppBar(
         title: Text(
           'Modules',
@@ -43,14 +46,14 @@ class ModulesPage extends StatelessWidget {
             Expanded(
               child: ListView.builder(
                 itemCount: AppConfig.availableModules.length,
-                itemBuilder: (context, index) {
+                itemBuilder: (final context, final index) {
                   final module = AppConfig.availableModules[index];
                   return _ModuleCard(
                     title: module.toUpperCase(),
                     subtitle: 'Manage your $module',
                     icon: _getModuleIcon(module),
                     isEnabled: true, // TODO: Get from state
-                    onToggle: (value) {
+                    onToggle: (final value) {
                       // TODO: Toggle module
                     },
                   );
@@ -61,9 +64,8 @@ class ModulesPage extends StatelessWidget {
         ),
       ),
     );
-  }
 
-  IconData _getModuleIcon(String module) {
+  IconData _getModuleIcon(final String module) {
     switch (module) {
       case 'inventory':
         return Icons.inventory;
@@ -101,8 +103,7 @@ class _ModuleCard extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    return Card(
+  Widget build(final BuildContext context) => Card(
       margin: EdgeInsets.only(bottom: 12.h),
       child: ListTile(
         leading: Container(
@@ -138,5 +139,4 @@ class _ModuleCard extends StatelessWidget {
         ),
       ),
     );
-  }
 }

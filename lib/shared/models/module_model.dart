@@ -11,7 +11,11 @@ class ModuleModel {
   final String category;
   final bool isEnabled;
   final bool isPremium;
+  // settings can be a complex object, so we use Map<String, dynamic>
+  // but they should be defined in a way that they can be easily serialized and deserialized
+  // also they are used to store user-specific configurations for each module, so they should be flexible and extensible to accommodate different types of settings for different modules
   final Map<String, dynamic> settings;
+  // dependencies can be a list of module names that this module depends on, which can be used to ensure that the required modules are enabled before enabling this module, and to manage the relationships between different modules in the app
   final List<String> dependencies;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -30,22 +34,22 @@ class ModuleModel {
     required this.updatedAt,
   });
 
-  factory ModuleModel.fromJson(Map<String, dynamic> json) =>
+  factory ModuleModel.fromJson(final Map<String, dynamic> json) =>
       _$ModuleModelFromJson(json);
   Map<String, dynamic> toJson() => _$ModuleModelToJson(this);
 
   ModuleModel copyWith({
-    String? id,
-    String? name,
-    String? description,
-    String? icon,
-    String? category,
-    bool? isEnabled,
-    bool? isPremium,
-    Map<String, dynamic>? settings,
-    List<String>? dependencies,
-    DateTime? createdAt,
-    DateTime? updatedAt,
+    final String? id,
+    final String? name,
+    final String? description,
+    final String? icon,
+    final String? category,
+    final bool? isEnabled,
+    final bool? isPremium,
+    final Map<String, dynamic>? settings,
+    final List<String>? dependencies,
+    final DateTime? createdAt,
+    final DateTime? updatedAt,
   }) {
     return ModuleModel(
       id: id ?? this.id,

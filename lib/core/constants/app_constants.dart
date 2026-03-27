@@ -4,6 +4,7 @@ class AppConstants {
   static const String authEndpoint = '/auth';
   static const String usersEndpoint = '/users';
   static const String modulesEndpoint = '/modules';
+  static const String baseGoldUrl = 'https://api.metalpriceapi.com/v1/latest';
   
   // Storage Keys
   static const String userTokenKey = 'user_token';

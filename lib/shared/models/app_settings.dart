@@ -9,6 +9,7 @@ class AppSettings {
   final bool notificationsEnabled;
   final bool analyticsEnabled;
   final bool crashlyticsEnabled;
+  final bool offlineModeEnabled; // Force offline / Pause Sync
   final Map<String, dynamic> customSettings;
   final DateTime lastUpdated;
 
@@ -18,6 +19,7 @@ class AppSettings {
     required this.notificationsEnabled,
     required this.analyticsEnabled,
     required this.crashlyticsEnabled,
+    required this.offlineModeEnabled,
     required this.customSettings,
     required this.lastUpdated,
   });
@@ -33,6 +35,7 @@ class AppSettings {
       notificationsEnabled: true,
       analyticsEnabled: true,
       crashlyticsEnabled: true,
+      offlineModeEnabled: false, // Default: Auto-Sync enabled
       customSettings: {},
       lastUpdated: DateTime.now(),
     );
@@ -44,6 +47,7 @@ class AppSettings {
     bool? notificationsEnabled,
     bool? analyticsEnabled,
     bool? crashlyticsEnabled,
+    bool? offlineModeEnabled,
     Map<String, dynamic>? customSettings,
     DateTime? lastUpdated,
   }) {
@@ -53,6 +57,7 @@ class AppSettings {
       notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
       analyticsEnabled: analyticsEnabled ?? this.analyticsEnabled,
       crashlyticsEnabled: crashlyticsEnabled ?? this.crashlyticsEnabled,
+      offlineModeEnabled: offlineModeEnabled ?? this.offlineModeEnabled,
       customSettings: customSettings ?? this.customSettings,
       lastUpdated: lastUpdated ?? this.lastUpdated,
     );

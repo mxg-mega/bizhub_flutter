@@ -3,25 +3,17 @@ import 'package:intl/intl.dart';
 
 class AppUtils {
   // Date formatting
-  static String formatDate(DateTime date, {String format = 'MMM dd, yyyy'}) {
-    return DateFormat(format).format(date);
-  }
+  static String formatDate(final DateTime date, {final String format = 'MMM dd, yyyy'}) => DateFormat(format).format(date);
 
-  static String formatDateTime(DateTime date, {String format = 'MMM dd, yyyy HH:mm'}) {
-    return DateFormat(format).format(date);
-  }
+  static String formatDateTime(final DateTime date, {final String format = 'MMM dd, yyyy HH:mm'}) => DateFormat(format).format(date);
 
-  static String formatTime(DateTime date, {String format = 'HH:mm'}) {
-    return DateFormat(format).format(date);
-  }
+  static String formatTime(final DateTime date, {final String format = 'HH:mm'}) => DateFormat(format).format(date);
 
   // Currency formatting
-  static String formatCurrency(double amount, {String currency = '\$'}) {
-    return '$currency${amount.toStringAsFixed(2)}';
-  }
+  static String formatCurrency(final double amount, {final String currency = '\$'}) => '$currency${amount.toStringAsFixed(2)}';
 
   // Number formatting
-  static String formatNumber(int number) {
+  static String formatNumber(final int number) {
     if (number >= 1000000) {
       return '${(number / 1000000).toStringAsFixed(1)}M';
     } else if (number >= 1000) {
@@ -31,20 +23,14 @@ class AppUtils {
   }
 
   // Validation helpers
-  static bool isValidEmail(String email) {
-    return RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email);
-  }
+  static bool isValidEmail(final String email) => RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email);
 
-  static bool isValidPassword(String password) {
-    return password.length >= 6;
-  }
+  static bool isValidPassword(final String password) => password.length >= 6;
 
-  static bool isValidPhone(String phone) {
-    return RegExp(r'^\+?[\d\s-\(\)]+$').hasMatch(phone);
-  }
+  static bool isValidPhone(final String phone) => RegExp(r'^\+?[\d\s-\(\)]+$').hasMatch(phone);
 
   // UI helpers
-  static void showSnackBar(BuildContext context, String message, {bool isError = false}) {
+  static void showSnackBar(final BuildContext context, final String message, {final bool isError = false}) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
@@ -54,33 +40,33 @@ class AppUtils {
     );
   }
 
-  static void showCustomDialog(BuildContext context, Widget dialog) {
+  static void showCustomDialog(final BuildContext context, final Widget dialog) {
     showDialog(
       context: context,
-      builder: (context) => dialog,
+      builder: (final context) => dialog,
     );
   }
 
   // String helpers
-  static String capitalize(String text) {
+  static String capitalize(final String text) {
     if (text.isEmpty) return text;
     return text[0].toUpperCase() + text.substring(1).toLowerCase();
   }
 
-  static String truncate(String text, int maxLength) {
+  static String truncate(final String text, final int maxLength) {
     if (text.length <= maxLength) return text;
     return '${text.substring(0, maxLength)}...';
   }
 
   // Color helpers
-  static Color darken(Color color, [double amount = 0.1]) {
+  static Color darken(final Color color, [final double amount = 0.1]) {
     assert(amount >= 0 && amount <= 1);
     final hsl = HSLColor.fromColor(color);
     final hslDark = hsl.withLightness((hsl.lightness - amount).clamp(0.0, 1.0));
     return hslDark.toColor();
   }
 
-  static Color lighten(Color color, [double amount = 0.1]) {
+  static Color lighten(final Color color, [final double amount = 0.1]) {
     assert(amount >= 0 && amount <= 1);
     final hsl = HSLColor.fromColor(color);
     final hslLight = hsl.withLightness((hsl.lightness + amount).clamp(0.0, 1.0));

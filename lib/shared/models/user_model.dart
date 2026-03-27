@@ -1,22 +1,29 @@
+import 'package:isar/isar.dart';
 import 'package:json_annotation/json_annotation.dart';
+import '../../core/auth/role_permissions.dart';
 
 part 'user_model.g.dart';
 
+@collection
 @JsonSerializable()
 class UserModel {
+  Id get isarId => _fastHash(uid);
+
   final String uid;
   final String email;
   final String? name;
   final String? photoUrl;
   final String? role;
+  
+  /// List of business memberships
+  @ignore
   final List<Map<String, dynamic>>? businessIds;
+  
+  @ignore
   final List<Map<String, dynamic>>? enabledModules;
+  
   final DateTime? createdAt;
   final DateTime? updatedAt;
-
-  set name(final String? value) {
-    name = value;
-  }
 
   const UserModel({
     required this.uid,
@@ -24,10 +31,10 @@ class UserModel {
     required this.name,
     this.photoUrl,
     required this.role,
-    required this.businessIds,
-    required this.enabledModules,
-    required this.createdAt,
-    required this.updatedAt,
+    this.businessIds,
+    this.enabledModules,
+    this.createdAt,
+    this.updatedAt,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) =>
@@ -56,5 +63,22 @@ class UserModel {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
+  }
+
+  // Permission Helpers
+  @ignore
+  AppRole get appRole => AppRole.fromString(role);
+
+  bool hasPermission(final AppPermission permission) => appRole.hasPermission(permission);
+
+  int _fastHash(String string) {
+    var hash = 0xcbf29ce484222325;
+    var i = 0;
+    while (i < string.length) {
+      final codeUnit = string.codeUnitAt(i++);
+      hash ^= codeUnit;
+      hash *= 0x100000001b3;
+    }
+    return hash;
   }
 }

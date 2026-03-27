@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../shared/models/module_model.dart';
+import '../utils/app_utils.dart';
+
 class AppConfig {
   static const String appName = 'Biz Module';
   static const String appVersion = '1.0.0';
@@ -54,4 +57,98 @@ class AppConfig {
     'reports',
     'settings',
   ];
+
+  // available modules can be used to dynamically generate the dashboard and settings pages
+  static const Map<String, String> moduleIcons = {
+    'inventory': 'assets/icons/inventory.svg',
+    'sales': 'assets/icons/sales.svg',
+    'customers': 'assets/icons/customers.svg',
+    'employees': 'assets/icons/employees.svg',
+    'finance': 'assets/icons/finance.svg',
+    'reports': 'assets/icons/reports.svg',
+    'settings': 'assets/icons/settings.svg',
+  };
+
+  static const Map<String, String> moduleTitles = {
+    'inventory': 'Inventory',
+    'sales': 'Sales',
+    'customers': 'Customers',
+    'employees': 'Employees',
+    'finance': 'Finance',
+    'reports': 'Reports',
+    'settings': 'Settings',
+  };
+
+  // This can be used to provide detailed descriptions for each module in the dashboard and settings pages
+  // moduleDescriptions can be used to show tooltips or info dialogs in the dashboard and settings pages
+  // moduleModels can be used to manage the state of each module (enabled/disabled, premium features, settings, etc.) and can be stored in a database or local storage
+  // The moduleModels list can be used to generate the dashboard cards and settings toggles dynamically based on the available modules and their states
+  // The moduleModels can also be used to manage dependencies between modules (e.g., if sales module requires inventory module to be enabled) and to handle premium features (e.g., if finance module has premium features that require a subscription)
+  // The moduleModels can be updated based on user interactions in the dashboard and settings pages, and the changes can be persisted in a database or local storage for future sessions
+  // The moduleModels can also be used to generate reports and analytics based on the enabled modules and their settings, providing insights into the business operations and performance
+
+  // TODO: for now these are hardcoded, but in the future they should be fetched from an API or a database to allow for dynamic updates and customization based on user preferences and business needs
+  static List<ModuleModel> moduleModels = [
+    ModuleModel(
+      id: '',
+      name: 'dashboard',
+      description: 'An overview of all your activities',
+      icon: '',
+      category: '',
+      isEnabled: true,
+      isPremium: false,
+      settings: {},
+      dependencies: [],
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    ),
+    ModuleModel(
+      name: 'inventory',
+      description: 'Manage your stock and supplies',
+      id: '',
+      icon: '',
+      category: '',
+      isEnabled: false,
+      isPremium: false,
+      settings: {},
+      dependencies: [],
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    ),
+    // ModuleModel(
+    //   name: 'sales',
+    //   description: 'Track your sales and revenue',
+    //   id: '',
+    //   icon: '',
+    //   category: '',
+    //   isEnabled: null,
+    //   isPremium: null,
+    //   settings: {},
+    //   dependencies: [],
+    //   createdAt: null,
+    //   updatedAt: null,
+    // ),
+    ModuleModel(
+      name: 'customers',
+      description: 'Manage your customer relationships',
+      id: '',
+      icon: '',
+      category: '',
+      isEnabled: false,
+      isPremium: false,
+      settings: {},
+      dependencies: [],
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    ),
+  ];
+  static const Map<String, String> moduleDescriptions = {
+    'inventory': 'Manage your stock and supplies',
+    'sales': 'Track your sales and revenue',
+    'customers': 'Manage your customer relationships',
+    'employees': 'Handle your staff and payroll',
+    'finance': 'Oversee your financials and accounting',
+    'reports': 'Generate insights and analytics',
+    'settings': 'Configure your app preferences',
+  };
 }

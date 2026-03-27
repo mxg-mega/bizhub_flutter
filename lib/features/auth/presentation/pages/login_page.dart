@@ -229,8 +229,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   onPressed: authState.isLoading ? null : _signInWithGoogle,
                   icon: Image.asset(
                     'assets/icons/google.png',
-                    height: 20.h,
-                    width: 20.w,
+                    height: 60.h,
+                    width: 60.w,
                     errorBuilder: (context, error, stackTrace) =>
                         const Icon(Icons.g_mobiledata, color: Colors.red),
                   ),
@@ -282,7 +282,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                       ),
                     ),
                     TextButton(
-                      onPressed: () => context.go('/register'),
+                      onPressed: () => context.push('/register'),
                       child: Text(
                         'Sign Up',
                         style: GoogleFonts.inter(

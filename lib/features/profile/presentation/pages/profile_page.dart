@@ -1,14 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/config/app_config.dart';
+import '../../../../shared/providers/auth_provider.dart';
 
-class ProfilePage extends StatelessWidget {
+class ProfilePage extends ConsumerWidget {
   const ProfilePage({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final authState = ref.watch(authProvider);
+    final user = authState.user!;
+    final business = authState.activeBusiness!;
+
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -43,7 +49,7 @@ class ProfilePage extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'John Doe',
+                          user.name ?? 'John Doe',
                           style: GoogleFonts.inter(
                             fontSize: 20.sp,
                             fontWeight: FontWeight.bold,
@@ -51,7 +57,7 @@ class ProfilePage extends StatelessWidget {
                         ),
                         SizedBox(height: 4.h),
                         Text(
-                          'john.doe@example.com',
+                          user.email,
                           style: GoogleFonts.inter(
                             fontSize: 14.sp,
                             color: Colors.grey[600],
@@ -59,7 +65,7 @@ class ProfilePage extends StatelessWidget {
                         ),
                         SizedBox(height: 8.h),
                         Text(
-                          'Business Owner',
+                          user.role ?? 'Business Owner',
                           style: GoogleFonts.inter(
                             fontSize: 12.sp,
                             color: AppConfig.primaryColor,

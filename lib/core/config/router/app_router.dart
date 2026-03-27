@@ -4,28 +4,61 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../features/auth/presentation/pages/login_page.dart';
 import '../../../features/auth/presentation/pages/register_page.dart';
+import '../../../features/auth/presentation/pages/accept_invite_page.dart';
 import '../../../features/onboarding/presentation/pages/onboarding_page.dart';
 import '../../../features/dashboard/presentation/pages/dashboard_page.dart';
+import '../../../features/dashboard/presentation/pages/analytics_page.dart';
+import '../../../features/dashboard/presentation/pages/expenses_page.dart';
+import '../../../features/dashboard/presentation/pages/employee_management_page.dart';
 import '../../../features/modules/presentation/pages/modules_page.dart';
 import '../../../features/profile/presentation/pages/profile_page.dart';
 import '../../../features/settings/presentation/pages/settings_page.dart';
+import '../../../features/zakat_tracker/presentation/zakat_page.dart';
+import '../../../features/inventory/presentation/pages/inventory_dashboard_page.dart';
+import '../../../features/inventory/presentation/pages/add_edit_product_page.dart';
+import '../../../features/inventory/presentation/pages/suppliers_page.dart';
+import '../../../features/inventory/presentation/pages/restock_page.dart';
+import '../../../features/inventory/presentation/pages/import_wizard/import_wizard_page.dart';
+import '../../../features/inventory/data/models/product_model.dart';
+import '../../../features/pos/presentation/pages/pos_page.dart';
+import '../../../features/pos/presentation/pages/sales_history_page.dart';
+import '../../../features/pos/presentation/pages/customer_management_page.dart';
+import '../../../features/receipts/presentation/pages/receipt_designer_page.dart';
+import '../../../features/receipts/presentation/pages/printer_settings_page.dart';
 import '../../../shared/widgets/splash_screen.dart';
+import '../../../shared/presentation/widgets/main_navigation_container.dart';
 
-final routerProvider = Provider<GoRouter>((ref) {
-  return AppRouter.router;
-});
+final routerProvider = Provider<GoRouter>((final ref) => AppRouter.router);
 
 class AppRouter {
   static const String splash = '/';
   static const String onboarding = '/onboarding';
   static const String login = '/login';
   static const String register = '/register';
+  static const String acceptInvite = '/accept-invite';
   static const String dashboard = '/dashboard';
+  static const String analytics = '/analytics';
+  static const String expenses = '/expenses';
+  static const String employees = '/employees';
+  static const String customers = '/customers';
+  static const String suppliers = '/suppliers';
+  static const String restock = '/restock';
+  static const String importWizard = '/import-wizard';
+  static const String receiptDesigner = '/receipt-designer';
+  static const String printerSettings = '/printer-settings';
   static const String modules = '/modules';
   static const String profile = '/profile';
   static const String settings = '/settings';
+  static const String zakat = '/zakat';
+  static const String inventory = '/inventory';
+  static const String pos = '/pos';
+  static const String salesHistory = '/sales-history';
+
+  static final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>();
+  static final GlobalKey<NavigatorState> _shellNavigatorKey = GlobalKey<NavigatorState>();
 
   static final GoRouter router = GoRouter(
+    navigatorKey: _rootNavigatorKey,
     initialLocation: splash,
     debugLogDiagnostics: true,
     routes: [
@@ -33,80 +66,161 @@ class AppRouter {
       GoRoute(
         path: splash,
         name: 'splash',
-        builder: (context, state) => const SplashScreen(),
+        builder: (final context, final state) => const SplashScreen(),
       ),
       
       // Onboarding
       GoRoute(
         path: onboarding,
         name: 'onboarding',
-        builder: (context, state) => const OnboardingPage(),
+        builder: (final context, final state) => const OnboardingPage(),
       ),
       
       // Authentication
       GoRoute(
         path: login,
         name: 'login',
-        builder: (context, state) => const LoginPage(),
+        builder: (final context, final state) => const LoginPage(),
       ),
       GoRoute(
         path: register,
         name: 'register',
-        builder: (context, state) => const RegisterPage(),
+        builder: (final context, final state) => const RegisterPage(),
       ),
       
-      // Main App Routes
+      // Invitation Landing
       GoRoute(
-        path: dashboard,
-        name: 'dashboard',
-        builder: (context, state) => const DashboardPage(),
+        path: acceptInvite,
+        name: 'accept-invite',
+        builder: (context, state) {
+          final inviteId = state.uri.queryParameters['inviteId'] ?? '';
+          return AcceptInvitePage(inviteId: inviteId);
+        },
+      ),
+
+      // Main App Shell
+      ShellRoute(
+        navigatorKey: _shellNavigatorKey,
+        builder: (context, state, child) => MainNavigationContainer(child: child),
+        routes: [
+          GoRoute(
+            path: dashboard,
+            name: 'dashboard',
+            builder: (final context, final state) => const DashboardPage(),
+          ),
+          GoRoute(
+            path: analytics,
+            name: 'analytics',
+            builder: (final context, final state) => const AnalyticsPage(),
+          ),
+          GoRoute(
+            path: expenses,
+            name: 'expenses',
+            builder: (final context, final state) => const ExpensesPage(),
+          ),
+          GoRoute(
+            path: employees,
+            name: 'employees',
+            builder: (final context, final state) => const EmployeeManagementPage(),
+          ),
+          GoRoute(
+            path: customers,
+            name: 'customers',
+            builder: (final context, final state) => const CustomerManagementPage(),
+          ),
+          GoRoute(
+            path: suppliers,
+            name: 'suppliers',
+            builder: (final context, final state) => const SuppliersPage(),
+          ),
+          GoRoute(
+            path: restock,
+            name: 'restock',
+            builder: (final context, final state) => const RestockPage(),
+          ),
+          GoRoute(
+            path: importWizard,
+            name: 'import-wizard',
+            builder: (final context, final state) => const ImportWizardPage(),
+          ),
+          GoRoute(
+            path: receiptDesigner,
+            name: 'receipt-designer',
+            builder: (final context, final state) => const ReceiptDesignerPage(),
+          ),
+          GoRoute(
+            path: printerSettings,
+            name: 'printer-settings',
+            builder: (final context, final state) => const PrinterSettingsPage(),
+          ),
+          GoRoute(
+            path: inventory,
+            name: 'inventory-dashboard',
+            builder: (final context, final state) => const InventoryDashboardPage(),
+            routes: [
+              GoRoute(
+                path: 'add-edit',
+                name: 'add-edit-product',
+                parentNavigatorKey: _rootNavigatorKey,
+                builder: (context, state) {
+                  final product = state.extra as ProductModel?;
+                  return AddEditProductPage(product: product);
+                },
+              ),
+            ],
+          ),
+          GoRoute(
+            path: pos,
+            name: 'pos',
+            builder: (final context, final state) => const PosPage(),
+          ),
+          GoRoute(
+            path: salesHistory,
+            name: 'sales-history',
+            builder: (final context, final state) => const SalesHistoryPage(),
+          ),
+          GoRoute(
+            path: zakat,
+            name: 'zakat-overview',
+            builder: (final context, final state) => const ZakatPage(),
+          ),
+          GoRoute(
+            path: settings,
+            name: 'settings',
+            builder: (final context, final state) => const SettingsPage(),
+          ),
+        ],
+      ),
+
+      GoRoute(
+        path: profile,
+        name: 'profile',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (final context, final state) => const ProfilePage(),
       ),
       GoRoute(
         path: modules,
         name: 'modules',
-        builder: (context, state) => const ModulesPage(),
-      ),
-      GoRoute(
-        path: profile,
-        name: 'profile',
-        builder: (context, state) => const ProfilePage(),
-      ),
-      GoRoute(
-        path: settings,
-        name: 'settings',
-        builder: (context, state) => const SettingsPage(),
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (final context, final state) => const ModulesPage(),
       ),
     ],
     
-    // Error handling
-    errorBuilder: (context, state) => Scaffold(
+    errorBuilder: (final context, final state) => Scaffold(
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
-              Icons.error_outline,
-              size: 64,
-              color: Colors.red,
-            ),
+            const Icon(Icons.error_outline, size: 64, color: Colors.red),
             const SizedBox(height: 16),
-            Text(
-              'Page not found',
-              style: Theme.of(context).textTheme.headlineSmall,
-            ),
+            Text('Page not found', style: Theme.of(context).textTheme.headlineSmall),
             const SizedBox(height: 8),
-            Text(
-              'The page you are looking for does not exist.',
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
+            Text('The page you are looking for does not exist.', style: Theme.of(context).textTheme.bodyMedium),
             const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () => context.go(dashboard),
-              child: const Text('Go to Dashboard'),
-            ),
+            ElevatedButton(onPressed: () => context.go(dashboard), child: const Text('Go to Dashboard')),
           ],
         ),
       ),
     ),
   );
-} 
+}

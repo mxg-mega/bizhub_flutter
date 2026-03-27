@@ -27,6 +27,31 @@ subprojects {
     project.evaluationDependsOn(":app")
 }
 
+subprojects {
+    val project = this
+    fun applyNamespace() {
+        if (project.hasProperty("android")) {
+            val android = project.extensions.getByName("android")
+            try {
+                val getNamespace = android.javaClass.getMethod("getNamespace")
+                val namespace = getNamespace.invoke(android)
+                if (namespace == null) {
+                    val setNamespace = android.javaClass.getMethod("setNamespace", String::class.java)
+                    setNamespace.invoke(android, project.group.toString())
+                }
+            } catch (e: Exception) {
+                // Ignore if methods are not found (older AGP)
+            }
+        }
+    }
+
+    if (project.state.executed) {
+        applyNamespace()
+    } else {
+        project.afterEvaluate { applyNamespace() }
+    }
+}
+
 tasks.register<Delete>("clean") {
     delete(rootProject.layout.buildDirectory)
 }

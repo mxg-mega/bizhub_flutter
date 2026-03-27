@@ -1,5 +1,3 @@
-import 'dart:collection';
-
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -61,6 +59,7 @@ class AuthService {
 
           return AuthResult.success(
             user: userModel,
+            activeBusiness: businessModel,
             message: 'Sign in successful',
           );
         } else {
@@ -116,10 +115,16 @@ class AuthService {
           updatedAt: DateTime.now(),
         );
 
+        // TODO: refactor firebase user saving to include membership creation, and setting default values
+        //        saving them to proper paths based on live schema
         await saveUserToFirestore(userModel);
         await saveUserToLocalStorage(userModel);
 
+        // TODO: implement business data creation and saving to proper paths based on the Llive MVP schema
+        // TODO: also implement seeding of data and path (sub-collection) initializations
+
         return AuthResult.success(
+          // TODO: implement business Model
           user: userModel,
           message: 'Account created successfully',
         );
@@ -194,6 +199,7 @@ class AuthService {
 
         await saveUserToLocalStorage(userModel);
         return AuthResult.success(
+          // TODO: implement businessModel
           user: userModel,
           message: 'Google sign in successful',
         );
@@ -259,6 +265,7 @@ class AuthService {
     String? photoUrl,
   }) async {
     try {
+      // TODO: implement an actual update logic according to the Live MVP
       final user = _auth.currentUser;
       if (user == null) {
         return AuthResult.failure(
@@ -284,6 +291,7 @@ class AuthService {
         await saveUserToFirestore(updatedUser);
         await saveUserToLocalStorage(updatedUser);
         return AuthResult.success(
+          // TODO: implement business model
           user: updatedUser,
           message: 'Profile updated successfully',
         );
@@ -323,7 +331,7 @@ class AuthService {
             snapshot.id: snapshot.data()! as Map<String, dynamic>,
           });
         }
-        // debugPrint('getUserFromFirestore: ${userModel.toJson()}');
+        debugPrint('getUserFromFirestore: ${userModel.toJson()}');
         return userModel.copyWith(
           name: doc.data()!['displayName'] as String?,
           businessIds: businessIDs,

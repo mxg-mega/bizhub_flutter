@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -6,9 +7,14 @@ import 'package:google_fonts/google_fonts.dart';
 import 'core/config/app_config.dart';
 import 'core/config/firebase/firebase_config.dart';
 import 'core/config/router/app_router.dart';
+import 'core/database/isar_service.dart';
+import 'core/services/sync_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Load environment variables
+  await dotenv.load(fileName: '.env');
 
   // Initialize Firebase
   if (AppConfig.enableFirebase) {
@@ -16,7 +22,23 @@ void main() async {
     FirebaseConfig.configureMessagingHandlers();
   }
 
-  runApp(const ProviderScope(child: BizModuleApp()));
+  // Initialize Offline-First Layer
+  final container = ProviderContainer();
+  try {
+    // 1. Open Isar Database
+    await container.read(isarDatabaseProvider.future);
+    // 2. Start Sync Engine & Connectivity Listener
+    container.read(syncServiceProvider);
+  } catch (e) {
+    debugPrint('Offline-First Initialization Failed: $e');
+  }
+
+  runApp(
+    UncontrolledProviderScope(
+      container: container,
+      child: const BizModuleApp(),
+    ),
+  );
 }
 
 class BizModuleApp extends ConsumerWidget {

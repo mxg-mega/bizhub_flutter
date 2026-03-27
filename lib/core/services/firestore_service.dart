@@ -82,6 +82,12 @@ class FirestoreService {
     await _db.collection(collectionPath).doc(id).delete();
   }
 
+  static Future<T> runTransaction<T>(
+    Future<T> Function(Transaction transaction) updateFunction,
+  ) async {
+    return await _db.runTransaction(updateFunction);
+  }
+
   static Future<List<T>> query<T>({
     required String collectionPath,
     required FromJson<T> fromJson,
