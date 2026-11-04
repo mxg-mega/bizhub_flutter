@@ -1,4 +1,3 @@
-import 'package:isar/isar.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:uuid/uuid.dart';
 import '../../../../core/database/isar_service.dart';
@@ -8,7 +7,6 @@ import '../../../../shared/providers/auth_provider.dart';
 import '../../../inventory/data/repositories/product_repository_impl.dart';
 import '../../data/models/sale_model.dart';
 import '../../data/repositories/pos_repository_impl.dart';
-import '../../../inventory/domain/repositories/product_repository.dart';
 
 part 'sales_providers.g.dart';
 

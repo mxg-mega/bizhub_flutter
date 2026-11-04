@@ -18,9 +18,9 @@ class EmployeeManagementPage extends ConsumerWidget {
       body: RefreshIndicator(
         onRefresh: () async => ref.invalidate(employeeListProvider),
         child: employeesAsync.when(
-          data: (employees) => _buildEmployeeList(context, ref, employees),
+          data: (final employees) => _buildEmployeeList(context, ref, employees),
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (e, _) => Center(child: Text('Error: $e')),
+          error: (final e, _) => Center(child: Text('Error: $e')),
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
@@ -31,7 +31,7 @@ class EmployeeManagementPage extends ConsumerWidget {
     );
   }
 
-  Widget _buildEmployeeList(BuildContext context, WidgetRef ref, List<UserModel> employees) {
+  Widget _buildEmployeeList(final BuildContext context, final WidgetRef ref, final List<UserModel> employees) {
     if (employees.isEmpty) {
       return const Center(child: Text('No employees found.'));
     }
@@ -39,7 +39,7 @@ class EmployeeManagementPage extends ConsumerWidget {
     return ListView.builder(
       padding: EdgeInsets.all(16.w),
       itemCount: employees.length,
-      itemBuilder: (context, index) {
+      itemBuilder: (final context, final index) {
         final employee = employees[index];
         return Card(
           margin: EdgeInsets.only(bottom: 12.h),
@@ -56,8 +56,8 @@ class EmployeeManagementPage extends ConsumerWidget {
             title: Text(employee.name ?? 'Unnamed User', style: const TextStyle(fontWeight: FontWeight.bold)),
             subtitle: Text('${employee.email}\nRole: ${employee.role?.toUpperCase()}'),
             trailing: PopupMenuButton<String>(
-              onSelected: (val) => _handleAction(context, ref, val, employee),
-              itemBuilder: (context) => [
+              onSelected: (final val) => _handleAction(context, ref, val, employee),
+              itemBuilder: (final context) => [
                 const PopupMenuItem(value: 'change_role', child: Text('Change Role')),
                 const PopupMenuItem(value: 'remove', child: Text('Remove from Business', style: TextStyle(color: Colors.red))),
               ],
@@ -68,7 +68,7 @@ class EmployeeManagementPage extends ConsumerWidget {
     );
   }
 
-  void _handleAction(BuildContext context, WidgetRef ref, String action, UserModel employee) {
+  void _handleAction(final BuildContext context, final WidgetRef ref, final String action, final UserModel employee) {
     switch (action) {
       case 'change_role':
         _showChangeRoleDialog(context, ref, employee);
@@ -79,14 +79,14 @@ class EmployeeManagementPage extends ConsumerWidget {
     }
   }
 
-  void _showAddEmployeeDialog(BuildContext context, WidgetRef ref) {
+  void _showAddEmployeeDialog(final BuildContext context, final WidgetRef ref) {
     final emailController = TextEditingController();
     String selectedRole = 'sales_rep';
 
     showDialog(
       context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
+      builder: (final context) => StatefulBuilder(
+        builder: (final context, final setState) => AlertDialog(
           title: const Text('Add New Employee'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
@@ -98,14 +98,14 @@ class EmployeeManagementPage extends ConsumerWidget {
               ),
               SizedBox(height: 16.h),
               DropdownButtonFormField<String>(
-                value: selectedRole,
+                initialValue: selectedRole,
                 decoration: const InputDecoration(labelText: 'Assign Role'),
                 items: const [
                   DropdownMenuItem(value: 'manager', child: Text('Manager')),
                   DropdownMenuItem(value: 'cashier', child: Text('Cashier')),
                   DropdownMenuItem(value: 'sales_rep', child: Text('Sales Rep')),
                 ],
-                onChanged: (val) => setState(() => selectedRole = val!),
+                onChanged: (final val) => setState(() => selectedRole = val!),
               ),
             ],
           ),
@@ -125,29 +125,29 @@ class EmployeeManagementPage extends ConsumerWidget {
     );
   }
 
-  void _showChangeRoleDialog(BuildContext context, WidgetRef ref, UserModel employee) {
+  void _showChangeRoleDialog(final BuildContext context, final WidgetRef ref, final UserModel employee) {
     String selectedRole = employee.role ?? 'sales_rep';
 
     showDialog(
       context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
+      builder: (final context) => StatefulBuilder(
+        builder: (final context, final setState) => AlertDialog(
           title: Text('Change Role: ${employee.name}'),
           content: DropdownButtonFormField<String>(
-            value: selectedRole,
+            initialValue: selectedRole,
             decoration: const InputDecoration(labelText: 'New Role'),
             items: const [
               DropdownMenuItem(value: 'manager', child: Text('Manager')),
               DropdownMenuItem(value: 'cashier', child: Text('Cashier')),
               DropdownMenuItem(value: 'sales_rep', child: Text('Sales Rep')),
             ],
-            onChanged: (val) => setState(() => selectedRole = val!),
+            onChanged: (final val) => setState(() => selectedRole = val!),
           ),
           actions: [
             TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
             ElevatedButton(
               onPressed: () async {
-                await ref.read(employeeActionsProvider.notifier).updateRole(employee.uid, selectedRole);
+                await ref.read(employeeActionsProvider.notifier).updateRole(employee.id, selectedRole);
                 if (context.mounted) Navigator.pop(context);
               },
               child: const Text('Update'),
@@ -158,17 +158,17 @@ class EmployeeManagementPage extends ConsumerWidget {
     );
   }
 
-  void _showRemoveConfirmDialog(BuildContext context, WidgetRef ref, UserModel employee) {
+  void _showRemoveConfirmDialog(final BuildContext context, final WidgetRef ref, final UserModel employee) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (final context) => AlertDialog(
         title: const Text('Remove Employee?'),
         content: Text('Are you sure you want to remove ${employee.name} from this business?'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
           TextButton(
             onPressed: () async {
-              await ref.read(employeeActionsProvider.notifier).removeEmployee(employee.uid);
+              await ref.read(employeeActionsProvider.notifier).removeEmployee(employee.id);
               if (context.mounted) Navigator.pop(context);
             },
             child: const Text('Remove', style: TextStyle(color: Colors.red)),

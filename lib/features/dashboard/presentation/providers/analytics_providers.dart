@@ -31,7 +31,7 @@ Stream<List<TransactionModel>> transactionHistory(final TransactionHistoryRef re
 @riverpod
 Stream<Map<DateTime, DailyFinance>> dailyFinance(final DailyFinanceRef ref) {
   return ref.watch(transactionHistoryProvider).maybeWhen(
-    data: (transactions) {
+    data: (final transactions) {
       final Map<DateTime, DailyFinance> daily = {};
       for (final tx in transactions) {
         final date = DateTime(tx.timestamp.year, tx.timestamp.month, tx.timestamp.day);

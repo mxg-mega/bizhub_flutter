@@ -10,21 +10,21 @@ import '../../../shared/models/business_model.dart';
 
 class CustomerStatementService {
   static Future<File> generateStatement({
-    required CustomerModel customer,
-    required BusinessModel business,
-    required List<SaleModel> sales,
-    required List<CustomerPaymentModel> payments,
+    required final CustomerModel customer,
+    required final BusinessModel business,
+    required final List<SaleModel> sales,
+    required final List<CustomerPaymentModel> payments,
   }) async {
     final pdf = pw.Document();
 
     // Sort all transactions by date
     final List<dynamic> transactions = [...sales, ...payments];
-    transactions.sort((a, b) => (a.timestamp as DateTime).compareTo(b.timestamp as DateTime));
+    transactions.sort((final a, final b) => (a.timestamp as DateTime).compareTo(b.timestamp as DateTime));
 
     pdf.addPage(
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
-        build: (context) => [
+        build: (final context) => [
           _buildHeader(business, customer),
           pw.SizedBox(height: 20),
           _buildSummary(customer),
@@ -49,7 +49,7 @@ class CustomerStatementService {
     return file;
   }
 
-  static pw.Widget _buildHeader(BusinessModel business, CustomerModel customer) {
+  static pw.Widget _buildHeader(final BusinessModel business, final CustomerModel customer) {
     return pw.Row(
       mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
       children: [
@@ -71,7 +71,7 @@ class CustomerStatementService {
     );
   }
 
-  static pw.Widget _buildSummary(CustomerModel customer) {
+  static pw.Widget _buildSummary(final CustomerModel customer) {
     return pw.Container(
       padding: const pw.EdgeInsets.all(10),
       decoration: pw.BoxDecoration(border: pw.Border.all(color: PdfColors.grey300)),
@@ -87,7 +87,7 @@ class CustomerStatementService {
     );
   }
 
-  static pw.Widget _buildTransactionTable(List<dynamic> transactions) {
+  static pw.Widget _buildTransactionTable(final List<dynamic> transactions) {
     return pw.Table(
       border: pw.TableBorder.all(color: PdfColors.grey300),
       children: [
@@ -100,7 +100,7 @@ class CustomerStatementService {
             pw.Padding(padding: const pw.EdgeInsets.all(5), child: pw.Text('Credit', style: pw.TextStyle(fontWeight: pw.FontWeight.bold))),
           ],
         ),
-        ...transactions.map((tx) {
+        ...transactions.map((final tx) {
           final isSale = tx is SaleModel;
           return pw.TableRow(
             children: [

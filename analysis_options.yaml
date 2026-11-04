@@ -1,117 +1,25 @@
-# This file configures the analyzer, which statically analyzes Dart code to
-# check for errors, warnings, and lints.
-#
-# The issues identified by the analyzer are surfaced in the UI of Dart-enabled
-# IDEs (https://dart.dev/tools#ides-and-editors). The analyzer can also be
-# invoked from the command line by running `flutter analyze`.
-
-# The following line activates a set of recommended lints for Flutter apps,
-# packages, and plugins designed to encourage good coding practices.
+analyzer:
+  exclude:
+    - build/**
+    - android/**
+    - ios/**
+    - web/**
+    - linux/**
+    - lib/**/*.g.dart
+    - **.g.dart
 include: package:flutter_lints/flutter.yaml
 
 linter:
   rules:
-    # Prefer const constructors
     prefer_const_constructors: true
     prefer_const_declarations: true
-    prefer_const_literals_to_create_immutables: true
-    
-    # Prefer final
-    prefer_final_fields: true
     prefer_final_locals: true
-    
-    # Prefer single quotes
-    prefer_single_quotes: true
-    
-    # Prefer relative imports
-    prefer_relative_imports: true
-    
-    # Avoid unnecessary containers
-    avoid_unnecessary_containers: true
-    
-    # Prefer sized box
-#    prefer_sized_box_for_whitespace: true
-
-    # Prefer foreach
-    prefer_foreach: true
-    
-    # Prefer contains
-    prefer_contains: true
-    
-    # Prefer isNotEmpty
-    prefer_is_empty: true
-    prefer_is_not_empty: true
-    
-    # Prefer isNot
-    prefer_is_not: true
-    
-    # Prefer iterable whereType
-    prefer_iterable_whereType: true
-    
-    # Prefer map literal
-    prefer_map_literal: true
-    
-    # Prefer collection if
-    prefer_collection_literals: true
-    
-    # Prefer conditional expression
-    prefer_conditional_expression: true
-    
-    # Prefer expression function bodies
-    prefer_expression_function_bodies: true
-    
-    # Prefer inline spread
-    prefer_inline_spread_collections: true
-    
-    # Prefer null aware operators
-    prefer_null_aware_operators: true
-    
-    # Prefer void to null
-    prefer_void_to_null: true
-    
-    # Sort child properties
-    sort_child_properties_last: true
-    
-    # Sort pub dependencies
-    sort_pub_dependencies: true
-    
-    # Use key in widget constructors
-    use_key_in_widget_constructors: true
-    
-    # Avoid print
-    avoid_print: true
-    
-    # Avoid web libraries in Flutter
-    avoid_web_libraries_in_flutter: true
-    
-    # Prefer const over final
-    prefer_const_over_final: true
-    
-    # # Prefer const literals
-    # prefer_const_literals_to_create_immutables: true
-    
-    # Prefer final parameters
     prefer_final_parameters: true
-    
-    # Prefer final variables
-    prefer_final_variables: true
-
-analyzer:
-  exclude:
-    - "**/*.g.dart"
-    - "**/*.freezed.dart"
-    - "**/*.mocks.dart"
-    - "**/generated_plugin_registrant.dart"
-  
-  errors:
-    # Treat missing required parameters as a warning (not a hint)
-    missing_required_param: warning
-    # Treat missing returns as a warning (not a hint)
-    missing_return: warning
-    # Allow having TODOs in the code
-    todo: ignore
-    # Allow having print statements in the code
-    avoid_print: ignore
-
-# Additional information about this file can be found at
-# https://dart.dev/guides/language/analysis-options
+    prefer_relative_imports: true
+    always_declare_return_types: true
+    annotate_overrides: true
+    avoid_print: true
+    curly_braces_in_flow_control_structures: true
+    prefer_single_quotes: true
+    sort_child_properties_last: true
+    unawaited_futures: true

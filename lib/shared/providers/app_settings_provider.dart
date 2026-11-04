@@ -28,13 +28,13 @@ class AppSettingsNotifier extends _$AppSettingsNotifier {
     }
   }
 
-  Future<void> updateSettings(AppSettings settings) async {
+  Future<void> updateSettings(final AppSettings settings) async {
     state = settings;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_key, jsonEncode(settings.toJson()));
   }
 
-  Future<void> toggleOfflineMode(bool enabled) async {
+  Future<void> toggleOfflineMode(final bool enabled) async {
     final newSettings = state.copyWith(
       offlineModeEnabled: enabled,
       lastUpdated: DateTime.now(),

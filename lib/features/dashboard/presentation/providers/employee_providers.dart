@@ -27,7 +27,7 @@ class EmployeeActions extends _$EmployeeActions {
       await ref.read(employeeRepositoryProvider).inviteEmployee(
         businessId: business.id!,
         businessName: business.name ?? 'Your Business',
-        adminId: auth.user!.uid,
+        adminId: auth.user!.id,
         email: email,
         role: role,
       );

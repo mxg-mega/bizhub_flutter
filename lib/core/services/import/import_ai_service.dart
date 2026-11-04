@@ -21,8 +21,8 @@ class ImportAiService {
         );
 
   Future<Map<String, String>> suggestMappings({
-    required List<String> userHeaders,
-    required List<String> systemFields,
+    required final List<String> userHeaders,
+    required final List<String> systemFields,
   }) async {
     final prompt = '''
     You are a data migration expert. 

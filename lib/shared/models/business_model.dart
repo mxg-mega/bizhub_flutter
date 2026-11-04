@@ -8,7 +8,7 @@ class TimestampOrStringConverter implements JsonConverter<DateTime?, dynamic> {
   const TimestampOrStringConverter();
 
   @override
-  DateTime? fromJson(dynamic json) {
+  DateTime? fromJson(final dynamic json) {
     if (json is Timestamp) {
       return json.toDate();
     }
@@ -19,7 +19,7 @@ class TimestampOrStringConverter implements JsonConverter<DateTime?, dynamic> {
   }
 
   @override
-  dynamic toJson(DateTime? date) => date?.toIso8601String();
+  dynamic toJson(final DateTime? date) => date?.toIso8601String();
 }
 
 @JsonSerializable(explicitToJson: true)
@@ -27,21 +27,29 @@ class BusinessModel {
   final String? id;
   final String? name;
   final String? description;
+  @JsonKey(name: 'logoUrl')
   final String? logoUrl;
   final String? category;
   final String? industry;
+  final String? size;
+  final String? language;
+  final List<String> goals;
   final String? address;
   final String? website;
   final String? phone;
   final String? email;
+  @JsonKey(name: 'ownerId')
   final String? ownerId;
-  final Map<String, dynamic>? enabledModules;
+  @JsonKey(name: 'enabledModules')
+  final dynamic enabledModules;
   final Map<String, dynamic>? settings;
 
   @TimestampOrStringConverter()
+  @JsonKey(name: 'createdAt')
   final DateTime? createdAt;
 
   @TimestampOrStringConverter()
+  @JsonKey(name: 'updatedAt')
   final DateTime? updatedAt;
 
   const BusinessModel({
@@ -51,6 +59,9 @@ class BusinessModel {
     this.logoUrl,
     this.category,
     this.industry,
+    this.size,
+    this.language = 'en',
+    this.goals = const [],
     this.address,
     this.website,
     this.phone,
@@ -62,26 +73,29 @@ class BusinessModel {
     this.updatedAt,
   });
 
-  factory BusinessModel.fromJson(Map<String, dynamic> json) =>
+  factory BusinessModel.fromJson(final Map<String, dynamic> json) =>
       _$BusinessModelFromJson(json);
   Map<String, dynamic> toJson() => _$BusinessModelToJson(this);
 
   BusinessModel copyWith({
-    String? id,
-    String? name,
-    String? description,
-    String? logoUrl,
-    String? category,
-    String? industry,
-    String? address,
-    String? phone,
-    String? website,
-    String? email,
-    String? ownerId,
-    Map<String, dynamic>? enabledModules,
-    Map<String, dynamic>? settings,
-    DateTime? createdAt,
-    DateTime? updatedAt,
+    final String? id,
+    final String? name,
+    final String? description,
+    final String? logoUrl,
+    final String? category,
+    final String? industry,
+    final String? size,
+    final String? language,
+    final List<String>? goals,
+    final String? address,
+    final String? phone,
+    final String? website,
+    final String? email,
+    final String? ownerId,
+    final dynamic enabledModules,
+    final Map<String, dynamic>? settings,
+    final DateTime? createdAt,
+    final DateTime? updatedAt,
   }) {
     return BusinessModel(
       id: id ?? this.id,
@@ -90,6 +104,9 @@ class BusinessModel {
       logoUrl: logoUrl ?? this.logoUrl,
       category: category ?? this.category,
       industry: industry ?? this.industry,
+      size: size ?? this.size,
+      language: language ?? this.language,
+      goals: goals ?? this.goals,
       address: address ?? this.address,
       phone: phone ?? this.phone,
       website: website ?? this.website,

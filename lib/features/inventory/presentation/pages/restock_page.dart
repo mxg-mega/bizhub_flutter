@@ -25,135 +25,269 @@ class _RestockPageState extends ConsumerState<RestockPage> {
   final List<StockInItem> _items = [];
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final suppliersAsync = ref.watch(supplierListProvider);
     final locationsAsync = ref.watch(locationsProvider);
     final productsAsync = ref.watch(productListProvider);
 
     return Scaffold(
-      appBar: const CommonAppBar(),
+      backgroundColor: Colors.grey[50],
+      appBar: const CommonAppBar(hasTitle: true, title: 'Stock Purchase'),
       body: SingleChildScrollView(
-        padding: EdgeInsets.all(16.w),
+        padding: EdgeInsets.all(20.w),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Stock Purchase (Restock)', style: GoogleFonts.inter(fontSize: 20.sp, fontWeight: FontWeight.bold)),
+            _buildSelectionSection(suppliersAsync, locationsAsync),
             SizedBox(height: 24.h),
-            
-            // Supplier & Location Pickers
-            Row(
-              children: [
-                Expanded(
-                  child: suppliersAsync.when(
-                    data: (suppliers) => DropdownButtonFormField<String>(
-                      value: _selectedSupplierId,
-                      decoration: const InputDecoration(labelText: 'Supplier'),
-                      items: suppliers.map((s) => DropdownMenuItem(value: s.id, child: Text(s.name))).toList(),
-                      onChanged: (val) => setState(() => _selectedSupplierId = val),
-                    ),
-                    loading: () => const LinearProgressIndicator(),
-                    error: (e, _) => Text('Error: $e'),
-                  ),
-                ),
-                SizedBox(width: 16.w),
-                Expanded(
-                  child: locationsAsync.when(
-                    data: (locations) => DropdownButtonFormField<String>(
-                      value: _selectedLocationId,
-                      decoration: const InputDecoration(labelText: 'Location'),
-                      items: locations.map((l) => DropdownMenuItem(value: l.id, child: Text(l.name))).toList(),
-                      onChanged: (val) => setState(() => _selectedLocationId = val),
-                    ),
-                    loading: () => const LinearProgressIndicator(),
-                    error: (e, _) => Text('Error: $e'),
-                  ),
-                ),
-              ],
-            ),
-            
+            _buildItemsSection(productsAsync),
             SizedBox(height: 24.h),
-            const Divider(),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text('Items', style: GoogleFonts.inter(fontSize: 16.sp, fontWeight: FontWeight.w600)),
-                TextButton.icon(
-                  onPressed: () => _showAddItemDialog(productsAsync.value ?? []),
-                  icon: const Icon(Icons.add),
-                  label: const Text('Add Item'),
-                ),
-              ],
-            ),
-            
-            _buildItemsList(),
-            
-            const Divider(height: 48),
-            SwitchListTile(
-              title: const Text('Mark as Paid (Cash Purchase)'),
-              subtitle: const Text('Disable to add this to Supplier Balance (Credit)'),
-              value: _isPaid,
-              onChanged: (val) => setState(() => _isPaid = val),
-            ),
-            
+            _buildPaymentSection(),
             SizedBox(height: 32.h),
-            SizedBox(
-              width: double.infinity,
-              height: 56.h,
-              child: ElevatedButton(
-                onPressed: _submit,
-                child: const Text('Complete Purchase & Update Stock'),
-              ),
-            ),
+            _buildSubmitButton(),
+            SizedBox(height: 40.h),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildItemsList() {
-    if (_items.isEmpty) return const Center(child: Padding(padding: EdgeInsets.all(32.0), child: Text('No items added yet.')));
-    
-    return Column(
-      children: _items.map((item) => ListTile(
-        title: Text(item.name),
-        subtitle: Text('${item.quantity} ${item.unit} @ \$${item.costPrice}'),
-        trailing: Text('\$${(item.quantity * item.costPrice).toStringAsFixed(2)}'),
-        onLongPress: () => setState(() => _items.remove(item)),
-      )).toList(),
+  Widget _buildSelectionSection(final AsyncValue<List<dynamic>> suppliersAsync, final AsyncValue<List<dynamic>> locationsAsync) {
+    return Container(
+      padding: EdgeInsets.all(20.w),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24.r),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10)],
+      ),
+      child: Column(
+        children: [
+          _buildDropdown(
+            label: 'Supplier',
+            hint: 'Select Source Supplier',
+            value: _selectedSupplierId,
+            items: suppliersAsync.when(
+              data: (final suppliers) => suppliers.map<DropdownMenuItem<String>>((final s) => DropdownMenuItem(value: s.id, child: Text(s.name))).toList(),
+              loading: () => [],
+              error: (_, final __) => [],
+            ),
+            onChanged: (final val) => setState(() => _selectedSupplierId = val),
+            icon: Icons.business_outlined,
+          ),
+          SizedBox(height: 16.h),
+          _buildDropdown(
+            label: 'Destination Location',
+            hint: 'Where to store items',
+            value: _selectedLocationId,
+            items: locationsAsync.when(
+              data: (final locations) => locations.map<DropdownMenuItem<String>>((final l) => DropdownMenuItem(value: l.id, child: Text(l.name))).toList(),
+              loading: () => [],
+              error: (_, final __) => [],
+            ),
+            onChanged: (final val) => setState(() => _selectedLocationId = val),
+            icon: Icons.location_on_outlined,
+          ),
+        ],
+      ),
     );
   }
 
-  void _showAddItemDialog(List<ProductModel> products) {
+  Widget _buildDropdown({
+    required final String label,
+    required final String hint,
+    required final dynamic value,
+    required final List<DropdownMenuItem<String>> items,
+    required final ValueChanged<String?> onChanged,
+    required final IconData icon,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: GoogleFonts.inter(fontSize: 13.sp, fontWeight: FontWeight.w600, color: Colors.grey[700])),
+        SizedBox(height: 8.h),
+        DropdownButtonFormField<String>(
+          initialValue: value,
+          hint: Text(hint, style: GoogleFonts.inter(fontSize: 14.sp, color: Colors.grey[400])),
+          decoration: InputDecoration(
+            prefixIcon: Icon(icon, size: 20.sp, color: Colors.blue[700]),
+            filled: true,
+            fillColor: Colors.grey[50],
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.r), borderSide: BorderSide.none),
+            contentPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+          ),
+          items: items,
+          onChanged: onChanged,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildItemsSection(final AsyncValue<List<ProductModel>> productsAsync) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24.r),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10)],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: EdgeInsets.all(20.w),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('Purchase Items', style: GoogleFonts.inter(fontSize: 15.sp, fontWeight: FontWeight.bold)),
+                TextButton.icon(
+                  onPressed: () => _showAddItemDialog(productsAsync.value ?? []),
+                  icon: const Icon(Icons.add_circle_outline, color: Colors.blue),
+                  label: Text('Add Item', style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: Colors.blue)),
+                ),
+              ],
+            ),
+          ),
+          if (_items.isEmpty)
+            Padding(
+              padding: EdgeInsets.only(bottom: 32.h),
+              child: Center(
+                child: Column(
+                  children: [
+                    Icon(Icons.shopping_cart_outlined, size: 48.sp, color: Colors.grey[200]),
+                    SizedBox(height: 12.h),
+                    Text('No items added', style: GoogleFonts.inter(color: Colors.grey)),
+                  ],
+                ),
+              ),
+            )
+          else
+            ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: _items.length,
+              separatorBuilder: (_, final __) => Divider(height: 1, color: Colors.grey[100]),
+              itemBuilder: (final context, final index) {
+                final item = _items[index];
+                return ListTile(
+                  contentPadding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 8.h),
+                  title: Text(item.name, style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 14.sp)),
+                  subtitle: Text('${item.quantity.toStringAsFixed(0)} ${item.unit} @ \$${item.costPrice.toStringAsFixed(2)}', style: GoogleFonts.inter(fontSize: 12.sp, color: Colors.grey[600])),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text('\$${(item.quantity * item.costPrice).toStringAsFixed(2)}', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 14.sp)),
+                      SizedBox(width: 8.w),
+                      IconButton(
+                        icon: const Icon(Icons.remove_circle_outline, color: Colors.redAccent, size: 20),
+                        onPressed: () => setState(() => _items.removeAt(index)),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          if (_items.isNotEmpty)
+            Container(
+              padding: EdgeInsets.all(20.w),
+              decoration: BoxDecoration(color: Colors.blue[50]?.withOpacity(0.3), borderRadius: BorderRadius.only(bottomLeft: Radius.circular(24.r), bottomRight: Radius.circular(24.r))),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('Total Cost', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 14.sp, color: Colors.blue[900])),
+                  Text('\$${_items.fold(0.0, (final sum, final i) => sum + (i.quantity * i.costPrice)).toStringAsFixed(2)}', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 18.sp, color: Colors.blue[900])),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPaymentSection() {
+    return Container(
+      padding: EdgeInsets.all(8.w),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20.r),
+        border: Border.all(color: _isPaid ? Colors.green[100]! : Colors.orange[100]!),
+      ),
+      child: SwitchListTile(
+        title: Text('Mark as Paid', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 14.sp)),
+        subtitle: Text(_isPaid ? 'Paid from Cash account' : 'Save as Supplier Credit', style: GoogleFonts.inter(fontSize: 12.sp)),
+        value: _isPaid,
+        activeThumbColor: Colors.green,
+        onChanged: (final val) => setState(() => _isPaid = val),
+        secondary: Icon(_isPaid ? Icons.check_circle_outline : Icons.account_balance_wallet_outlined, color: _isPaid ? Colors.green : Colors.orange),
+      ),
+    );
+  }
+
+  Widget _buildSubmitButton() {
+    final totalCost = _items.fold(0.0, (final sum, final i) => sum + (i.quantity * i.costPrice));
+    return SizedBox(
+      width: double.infinity,
+      height: 56.h,
+      child: ElevatedButton(
+        onPressed: _submit,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.black87,
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
+          elevation: 0,
+        ),
+        child: Text('Complete Purchase • \$${totalCost.toStringAsFixed(2)}', style: GoogleFonts.inter(fontSize: 16.sp, fontWeight: FontWeight.bold)),
+      ),
+    );
+  }
+
+  void _showAddItemDialog(final List<ProductModel> products) {
     String? productId;
     final qtyController = TextEditingController(text: '1');
     final costController = TextEditingController();
 
     showDialog(
       context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          title: const Text('Add Purchase Item'),
+      builder: (final context) => StatefulBuilder(
+        builder: (final context, final setDialogState) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24.r)),
+          title: Text('Add Purchase Item', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               DropdownButtonFormField<String>(
-                value: productId,
+                initialValue: productId,
                 hint: const Text('Select Product'),
-                items: products.map((p) => DropdownMenuItem(value: p.id, child: Text(p.name))).toList(),
-                onChanged: (val) => setDialogState(() => productId = val),
+                isExpanded: true,
+                items: products.map((final p) => DropdownMenuItem(value: p.id, child: Text(p.name))).toList(),
+                onChanged: (final val) {
+                  setDialogState(() {
+                    productId = val;
+                    if (val != null) {
+                      final p = products.firstWhere((final prod) => prod.id == val);
+                      costController.text = p.cost.toString();
+                    }
+                  });
+                },
               ),
               SizedBox(height: 16.h),
-              TextField(controller: qtyController, decoration: const InputDecoration(labelText: 'Quantity'), keyboardType: TextInputType.number),
+              TextField(
+                controller: qtyController, 
+                decoration: InputDecoration(labelText: 'Quantity', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.r))), 
+                keyboardType: TextInputType.number,
+              ),
               SizedBox(height: 16.h),
-              TextField(controller: costController, decoration: const InputDecoration(labelText: 'Cost Price per Unit'), keyboardType: TextInputType.number),
+              TextField(
+                controller: costController, 
+                decoration: InputDecoration(labelText: 'Cost Price per Unit', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.r)), prefixText: r'$ '), 
+                keyboardType: TextInputType.number,
+              ),
             ],
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+            TextButton(onPressed: () => Navigator.pop(context), child: Text('Cancel', style: GoogleFonts.inter(color: Colors.grey))),
             ElevatedButton(
               onPressed: () {
                 if (productId == null) return;
-                final product = products.firstWhere((p) => p.id == productId);
+                final product = products.firstWhere((final p) => p.id == productId);
                 setState(() {
                   _items.add(StockInItem(
                     productId: product.id,
@@ -165,6 +299,7 @@ class _RestockPageState extends ConsumerState<RestockPage> {
                 });
                 Navigator.pop(context);
               },
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.blue, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r))),
               child: const Text('Add'),
             ),
           ],
@@ -180,8 +315,8 @@ class _RestockPageState extends ConsumerState<RestockPage> {
       return;
     }
 
-    final totalCost = _items.fold(0.0, (sum, i) => sum + (i.quantity * i.costPrice));
-    final supplier = (ref.read(supplierListProvider).value ?? []).firstWhere((s) => s.id == _selectedSupplierId);
+    final totalCost = _items.fold(0.0, (final sum, final i) => sum + (i.quantity * i.costPrice));
+    final supplier = (ref.read(supplierListProvider).value ?? []).firstWhere((final s) => s.id == _selectedSupplierId);
 
     final stockIn = StockInModel(
       id: const Uuid().v4(),

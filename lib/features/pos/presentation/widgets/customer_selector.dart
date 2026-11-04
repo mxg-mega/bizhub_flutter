@@ -40,8 +40,8 @@ class CustomerSelector extends ConsumerWidget {
           ],
         ),
         customersAsync.when(
-          data: (customers) => DropdownButtonFormField<String>(
-            value: selectedCustomerId,
+          data: (final customers) => DropdownButtonFormField<String>(
+            initialValue: selectedCustomerId,
             isExpanded: true,
             hint: const Text('Walk-in Customer'),
             decoration: InputDecoration(
@@ -53,30 +53,30 @@ class CustomerSelector extends ConsumerWidget {
                 value: null,
                 child: Text('Walk-in Customer'),
               ),
-              ...customers.map((c) => DropdownMenuItem(
+              ...customers.map((final c) => DropdownMenuItem(
                 value: c.id,
                 child: Text('${c.name} (${c.phone ?? "No Phone"})'),
               )),
             ],
-            onChanged: (val) {
-              final customer = val == null ? null : customers.firstWhere((c) => c.id == val);
+            onChanged: (final val) {
+              final customer = val == null ? null : customers.firstWhere((final c) => c.id == val);
               onCustomerSelected(customer);
             },
           ),
           loading: () => const LinearProgressIndicator(),
-          error: (e, _) => Text('Error: $e'),
+          error: (final e, _) => Text('Error: $e'),
         ),
       ],
     );
   }
 
-  void _showAddCustomerDialog(BuildContext context, WidgetRef ref) {
+  void _showAddCustomerDialog(final BuildContext context, final WidgetRef ref) {
     final nameController = TextEditingController();
     final phoneController = TextEditingController();
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (final context) => AlertDialog(
         title: const Text('Add New Customer'),
         content: Column(
           mainAxisSize: MainAxisSize.min,

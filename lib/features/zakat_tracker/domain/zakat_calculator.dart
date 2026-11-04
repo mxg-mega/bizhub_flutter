@@ -39,7 +39,7 @@ class ZakatCalculator {
     final bool isPayable = netWorth >= nisabValue;
     final double zakatAmount = isPayable ? (netWorth * 0.025) : 0.0;
 
-    ZakatCalculationResult result = ZakatCalculationResult(
+    final ZakatCalculationResult result = ZakatCalculationResult(
       goldPricePerGram: goldPricePerGram,
       silverPricePerGram: silverPricePerGram,
       nisabValue: nisabValue,

@@ -10,10 +10,11 @@ class ProfilePage extends ConsumerWidget {
   const ProfilePage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     final authState = ref.watch(authProvider);
+    final currentRole = ref.watch(currentRoleProvider);
     final user = authState.user!;
-    final business = authState.activeBusiness!;
+    // final business = authState.activeBusiness!;
 
     return Scaffold(
       appBar: AppBar(
@@ -57,7 +58,7 @@ class ProfilePage extends ConsumerWidget {
                         ),
                         SizedBox(height: 4.h),
                         Text(
-                          user.email,
+                          user.email ?? 'No email',
                           style: GoogleFonts.inter(
                             fontSize: 14.sp,
                             color: Colors.grey[600],
@@ -65,7 +66,7 @@ class ProfilePage extends ConsumerWidget {
                         ),
                         SizedBox(height: 8.h),
                         Text(
-                          user.role ?? 'Business Owner',
+                          user.isSuperAdmin ? 'Super Admin' : (currentRole?.name ?? 'Staff'),
                           style: GoogleFonts.inter(
                             fontSize: 12.sp,
                             color: AppConfig.primaryColor,
@@ -126,9 +127,7 @@ class ProfilePage extends ConsumerWidget {
               icon: Icons.logout,
               title: 'Logout',
               subtitle: 'Sign out of your account',
-              onTap: () {
-                // TODO: Implement logout
-              },
+              onTap: () => ref.read(authProvider.notifier).signOut(),
               isDestructive: true,
             ),
           ],
@@ -154,7 +153,7 @@ class _ProfileOption extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     return Card(
       margin: EdgeInsets.only(bottom: 8.h),
       child: ListTile(

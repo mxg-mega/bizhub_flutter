@@ -1,4 +1,3 @@
-import 'package:isar/isar.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:uuid/uuid.dart';
 import '../../../../shared/providers/auth_provider.dart';
@@ -8,7 +7,6 @@ import '../../data/models/sale_item_model.dart';
 import '../../data/repositories/customer_repository_impl.dart';
 import '../../data/repositories/pos_repository_impl.dart';
 import '../../../inventory/data/models/product_model.dart';
-import '../../../inventory/domain/repositories/product_repository.dart';
 import '../../../inventory/domain/services/inventory_service.dart';
 import '../../../../core/database/isar_service.dart';
 import '../../../../core/services/sync_service.dart';
@@ -107,23 +105,25 @@ class Cart extends _$Cart {
     final sale = SaleModel(
       id: const Uuid().v4(),
       businessId: business.id!,
-      userId: user.uid,
+      userId: user.id,
       customerId: state.customerId,
+      customer: state.customerName,
       items: state.items,
       subtotal: state.subtotal,
       tax: state.taxAmount,
       discount: state.discount,
-      total: state.total,
+      totalAmount: state.total,
       paymentMethod: paymentMethod,
       timestamp: DateTime.now(),
+      createdAt: DateTime.now(),
       locationId: locationId,
       status: status,
       workflow: SaleWorkflowModel(
         enabled: workflowEnabled,
-        createdBy: user.uid,
+        createdBy: user.id,
         createdByName: user.name ?? 'Unknown',
         history: [
-          SaleWorkflowStage(status: status, timestamp: DateTime.now(), actorId: user.uid, notes: 'Sale created'),
+          SaleWorkflowStage(status: status, timestamp: DateTime.now(), actorId: user.id, notes: 'Sale created'),
         ],
       ),
     );
@@ -174,7 +174,7 @@ class Cart extends _$Cart {
           productId: item.productId,
           locationId: locationId,
           delta: -delta,
-          userId: user.uid,
+          userId: user.id,
           reason: 'Sale #${sale.id.substring(0, 8)}',
           type: 'sale',
         );

@@ -28,7 +28,7 @@ class InventoryService {
     final String? reason,
     final String type = 'adjustment',
   }) async {
-    await FirestoreService.runTransaction((transaction) async {
+    await FirestoreService.runTransaction((final transaction) async {
       final productRef = FirestoreService.docIn(_getProductsPath(businessId), productId);
       final snapshot = await transaction.get(productRef);
 
@@ -75,7 +75,7 @@ class InventoryService {
     final String? reason,
     final String type = 'adjustment',
   }) async {
-    await FirestoreService.runTransaction((transaction) async {
+    await FirestoreService.runTransaction((final transaction) async {
       final productRef = FirestoreService.docIn(_getProductsPath(businessId), productId);
       final snapshot = await transaction.get(productRef);
 
@@ -121,7 +121,7 @@ class InventoryService {
   }) async {
     if (quantity <= 0) throw Exception('Transfer quantity must be positive');
 
-    await FirestoreService.runTransaction((transaction) async {
+    await FirestoreService.runTransaction((final transaction) async {
       final productRef = FirestoreService.docIn(_getProductsPath(businessId), productId);
       final snapshot = await transaction.get(productRef);
 

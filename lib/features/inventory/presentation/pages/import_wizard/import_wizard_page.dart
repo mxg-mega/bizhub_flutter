@@ -167,7 +167,7 @@ class _MappingStepView extends ConsumerWidget {
                       SizedBox(width: 16.w),
                       Expanded(
                         child: DropdownButtonFormField<String>(
-                          value: m.systemField,
+                          initialValue: m.systemField,
                           decoration: const InputDecoration(
                             isDense: true,
                             contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),

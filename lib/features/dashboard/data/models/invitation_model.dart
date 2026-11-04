@@ -33,11 +33,11 @@ class InvitationModel {
     required this.createdAt,
   });
 
-  factory InvitationModel.fromJson(Map<String, dynamic> json) =>
+  factory InvitationModel.fromJson(final Map<String, dynamic> json) =>
       _$InvitationModelFromJson(json);
   Map<String, dynamic> toJson() => _$InvitationModelToJson(this);
 
-  int _fastHash(String string) {
+  int _fastHash(final String string) {
     var hash = 0xcbf29ce484222325;
     var i = 0;
     while (i < string.length) {

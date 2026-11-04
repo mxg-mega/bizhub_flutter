@@ -4,7 +4,7 @@ import '../models/module_model.dart';
 class ModuleRepository {
   static const String collectionPath = 'modules';
 
-  static Future<ModuleModel?> getById(String id) async {
+  static Future<ModuleModel?> getById(final String id) async {
     return FirestoreService.getById<ModuleModel>(
       collectionPath: collectionPath,
       id: id,
@@ -12,12 +12,12 @@ class ModuleRepository {
     );
   }
 
-  static Future<void> upsert(ModuleModel module) async {
+  static Future<void> upsert(final ModuleModel module) async {
     await FirestoreService.setById<ModuleModel>(
       collectionPath: collectionPath,
       id: module.id,
       value: module,
-      toJson: (m) => m.toJson(),
+      toJson: (final m) => m.toJson(),
       merge: true,
     );
   }
@@ -26,7 +26,7 @@ class ModuleRepository {
     return FirestoreService.query<ModuleModel>(
       collectionPath: collectionPath,
       fromJson: ModuleModel.fromJson,
-      where: [(q) => q.where('isEnabled', isEqualTo: true)],
+      where: [(final q) => q.where('isEnabled', isEqualTo: true)],
       orderBy: const [OrderBy('name')],
     );
   }

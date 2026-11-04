@@ -1,7 +1,6 @@
 import 'package:blue_thermal_printer/blue_thermal_printer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'dart:typed_data';
 import '../../../../shared/presentation/widgets/common_app_bar.dart';
 
 class PrinterSettingsPage extends StatefulWidget {

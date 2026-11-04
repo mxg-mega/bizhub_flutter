@@ -22,18 +22,18 @@ class OnboardingStep {
     this.metadata,
   });
 
-  factory OnboardingStep.fromJson(Map<String, dynamic> json) =>
+  factory OnboardingStep.fromJson(final Map<String, dynamic> json) =>
       _$OnboardingStepFromJson(json);
   Map<String, dynamic> toJson() => _$OnboardingStepToJson(this);
 
   OnboardingStep copyWith({
-    String? id,
-    String? title,
-    String? description,
-    String? imagePath,
-    String? buttonText,
-    bool? isLastStep,
-    Map<String, dynamic>? metadata,
+    final String? id,
+    final String? title,
+    final String? description,
+    final String? imagePath,
+    final String? buttonText,
+    final bool? isLastStep,
+    final Map<String, dynamic>? metadata,
   }) {
     return OnboardingStep(
       id: id ?? this.id,

@@ -64,13 +64,13 @@ class ProductModel {
   });
 
   double get totalStock =>
-      stockByLocation.values.fold(0, (sum, val) => sum + val);
+      stockByLocation.values.fold(0, (final sum, final val) => sum + val);
 
   double calculatePriceForUnit(final String unitName) {
     // 1. Try modern PriceConfigs first
     if (priceConfigs != null && priceConfigs!.isNotEmpty) {
       final config = priceConfigs!.firstWhere(
-        (c) => c.unit == unitName,
+        (final c) => c.unit == unitName,
         orElse: () => priceConfigs!.first,
       );
       
@@ -78,7 +78,7 @@ class ProductModel {
       if (unitChain == null) return config.price ?? 0.0;
       
       final baseConfig = priceConfigs!.firstWhere(
-        (c) => c.unit == unitChain!.baseUnit,
+        (final c) => c.unit == unitChain!.baseUnit,
         orElse: () => priceConfigs!.first,
       );
       
@@ -91,7 +91,7 @@ class ProductModel {
     // 2. Fallback to Legacy UnitPrices
     if (unitPrices != null && unitPrices!.isNotEmpty) {
       final match = unitPrices!.firstWhere(
-        (u) => u['unit'] == unitName,
+        (final u) => u['unit'] == unitName,
         orElse: () => unitPrices!.first,
       );
       return (match['price'] as num?)?.toDouble() ?? 0.0;
@@ -107,7 +107,8 @@ class ProductModel {
     // Normalize basic fields
     json['id'] ??= 'unknown';
     json['name'] ??= 'Unnamed Product';
-    json['isArchived'] ??= false;
+    json['isArchived'] ??= json['is_archived'] ?? false;
+    json['cost'] = ((json['cost'] ?? 0.0) as num).toDouble();
 
     // Normalize stock
     if (!json.containsKey('stockByLocation') || (json['stockByLocation'] as Map).isEmpty) {
@@ -124,7 +125,7 @@ class ProductModel {
     if (json['priceConfigs'] == null && json.containsKey('unitPrices')) {
       final rawList = json['unitPrices'] as List?;
       if (rawList != null) {
-        json['priceConfigs'] = rawList.map((up) {
+        json['priceConfigs'] = rawList.map((final up) {
           final map = up as Map<String, dynamic>;
           return {
             'unit': map['unit'] ?? sellingUnit,

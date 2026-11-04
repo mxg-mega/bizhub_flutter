@@ -73,7 +73,7 @@ class ExpenseRepositoryImpl implements ExpenseRepository {
     _syncService.pull<ExpenseModel>(
       businessId: businessId,
       collectionPath: _getExpensesPath(businessId),
-      fromJsons: (final jsons) => jsons.map((j) => ExpenseModel.fromJson(j)).toList(),
+      fromJsons: (final jsons) => jsons.map((final j) => ExpenseModel.fromJson(j)).toList(),
     );
 
     return locals;

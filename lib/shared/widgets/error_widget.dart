@@ -18,7 +18,7 @@ class AppErrorWidget extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     return Center(
       child: Padding(
         padding: EdgeInsets.all(24.w),
@@ -97,7 +97,7 @@ class EmptyStateWidget extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     return Center(
       child: Padding(
         padding: EdgeInsets.all(24.w),

@@ -15,28 +15,32 @@ class ReceiptGenerator {
   Future<void> printThermal(final SaleModel sale, final BusinessModel business, final ReceiptTemplateModel template) async {
     if ((await _bluetooth.isConnected) == true) {
       final profile = await CapabilityProfile.load();
-      final generator = Generator(PaperSize.mm58, profile);
+      final generator = Generator(template.paperSize == '80mm' ? PaperSize.mm80 : PaperSize.mm58, profile);
       List<int> bytes = [];
 
-      if (template.headerText != null) {
-        bytes += generator.text(template.headerText!, styles: const PosStyles(align: PosAlign.center, bold: true));
-        bytes += generator.hr();
+      final isMinimal = template.layoutStyle == 'Minimal';
+      final isModern = template.layoutStyle == 'Modern';
+      final align = isMinimal ? PosAlign.left : PosAlign.center;
+
+      if (template.headerText != null && template.headerText!.isNotEmpty) {
+        bytes += generator.text(template.headerText!, styles: PosStyles(align: align, bold: !isMinimal));
+        if (!isMinimal) bytes += generator.hr();
       }
 
-      bytes += generator.text(business.name ?? '', styles: const PosStyles(align: PosAlign.center, height: PosTextSize.size2, width: PosTextSize.size2));
-      bytes += generator.text(business.address ?? '', styles: const PosStyles(align: PosAlign.center));
+      bytes += generator.text(business.name ?? '', styles: PosStyles(align: align, height: isModern ? PosTextSize.size2 : PosTextSize.size1, width: isModern ? PosTextSize.size2 : PosTextSize.size1, bold: true));
+      if (business.address != null) bytes += generator.text(business.address!, styles: PosStyles(align: align));
       bytes += generator.hr();
 
       bytes += generator.row([
-        PosColumn(text: 'Item', width: 6),
-        PosColumn(text: 'Qty', width: 2),
-        PosColumn(text: 'Price', width: 4, styles: const PosStyles(align: PosAlign.right)),
+        PosColumn(text: 'Item', width: 6, styles: const PosStyles(bold: true)),
+        PosColumn(text: 'Qty', width: 2, styles: const PosStyles(bold: true, align: PosAlign.center)),
+        PosColumn(text: 'Price', width: 4, styles: const PosStyles(align: PosAlign.right, bold: true)),
       ]);
       
       for (final item in sale.items) {
         bytes += generator.row([
           PosColumn(text: item.name, width: 6),
-          PosColumn(text: item.quantity.toString(), width: 2),
+          PosColumn(text: item.quantity.toStringAsFixed(0), width: 2, styles: const PosStyles(align: PosAlign.center)),
           PosColumn(text: item.totalPrice.toStringAsFixed(2), width: 4, styles: const PosStyles(align: PosAlign.right)),
         ]);
       }
@@ -44,12 +48,12 @@ class ReceiptGenerator {
       bytes += generator.hr();
 
       bytes += generator.row([
-        PosColumn(text: 'TOTAL', width: 6, styles: const PosStyles(bold: true)),
+        PosColumn(text: 'TOTAL', width: 6, styles: const PosStyles(bold: true, height: PosTextSize.size2)),
         PosColumn(text: '', width: 2),
-        PosColumn(text: sale.total.toStringAsFixed(2), width: 4, styles: const PosStyles(align: PosAlign.right, bold: true)),
+        PosColumn(text: sale.total.toStringAsFixed(2), width: 4, styles: const PosStyles(align: PosAlign.right, bold: true, height: PosTextSize.size2)),
       ]);
 
-      if (template.footerText != null) {
+      if (template.footerText != null && template.footerText!.isNotEmpty) {
         bytes += generator.hr();
         bytes += generator.text(template.footerText!, styles: const PosStyles(align: PosAlign.center));
       }
@@ -67,16 +71,27 @@ class ReceiptGenerator {
     pdf.addPage(
       pw.Page(
         pageFormat: PdfPageFormat.roll80,
-        build: (pw.Context context) {
+        build: (final pw.Context context) {
+          final isMinimal = template.layoutStyle == 'Minimal';
+          final isModern = template.layoutStyle == 'Modern';
+          final align = isMinimal ? pw.CrossAxisAlignment.start : pw.CrossAxisAlignment.center;
+
           return pw.Column(
-            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            crossAxisAlignment: align,
             children: [
-              if (template.headerText != null) 
-                pw.Center(child: pw.Text(template.headerText!, style: pw.TextStyle(fontWeight: pw.FontWeight.bold))),
+              if (template.headerText != null && template.headerText!.isNotEmpty) 
+                pw.Paragraph(
+                  text: template.headerText!, 
+                  textAlign: isMinimal ? pw.TextAlign.left : pw.TextAlign.center,
+                  style: pw.TextStyle(fontSize: 10, fontWeight: isMinimal ? pw.FontWeight.normal : pw.FontWeight.bold),
+                ),
               
               pw.SizedBox(height: 10),
-              pw.Center(child: pw.Text(business.name ?? '', style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold))),
-              pw.Center(child: pw.Text(business.address ?? '')),
+              pw.Text(
+                business.name ?? '', 
+                style: pw.TextStyle(fontSize: isModern ? 22 : 18, fontWeight: pw.FontWeight.bold),
+              ),
+              if (business.address != null) pw.Text(business.address!, style: const pw.TextStyle(fontSize: 10)),
               pw.Divider(),
               
               pw.Table(
@@ -86,10 +101,11 @@ class ReceiptGenerator {
                     pw.Text('Qty', textAlign: pw.TextAlign.center, style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
                     pw.Text('Price', textAlign: pw.TextAlign.right, style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
                   ]),
-                  ...sale.items.map((item) => pw.TableRow(children: [
-                    pw.Text(item.name),
-                    pw.Text(item.quantity.toString(), textAlign: pw.TextAlign.center),
-                    pw.Text(item.totalPrice.toStringAsFixed(2), textAlign: pw.TextAlign.right),
+                  pw.TableRow(children: [pw.Divider(), pw.Divider(), pw.Divider()]),
+                  ...sale.items.map((final item) => pw.TableRow(children: [
+                    pw.Padding(padding: const pw.EdgeInsets.symmetric(vertical: 2), child: pw.Text(item.name)),
+                    pw.Padding(padding: const pw.EdgeInsets.symmetric(vertical: 2), child: pw.Text(item.quantity.toStringAsFixed(0), textAlign: pw.TextAlign.center)),
+                    pw.Padding(padding: const pw.EdgeInsets.symmetric(vertical: 2), child: pw.Text(item.totalPrice.toStringAsFixed(2), textAlign: pw.TextAlign.right)),
                   ])),
                 ],
               ),
@@ -104,8 +120,14 @@ class ReceiptGenerator {
               ),
               
               pw.SizedBox(height: 20),
-              if (template.footerText != null) 
-                pw.Center(child: pw.Text(template.footerText!, style: const pw.TextStyle(fontSize: 10))),
+              if (template.footerText != null && template.footerText!.isNotEmpty) 
+                pw.Center(
+                  child: pw.Text(
+                    template.footerText!, 
+                    textAlign: pw.TextAlign.center,
+                    style: pw.TextStyle(fontSize: 9, fontStyle: pw.FontStyle.italic),
+                  ),
+                ),
             ],
           );
         },
@@ -113,7 +135,7 @@ class ReceiptGenerator {
     );
 
     final output = await getTemporaryDirectory();
-    final file = File("${output.path}/receipt_${sale.id.substring(0, 8)}.pdf");
+    final file = File('${output.path}/receipt_${sale.id.substring(0, 8)}.pdf');
     await file.writeAsBytes(await pdf.save());
     return file;
   }

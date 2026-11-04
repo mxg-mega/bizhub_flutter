@@ -4,6 +4,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../../core/database/isar_service.dart';
 import '../../../../core/database/local_models.dart';
 import '../../../../core/services/sync_service.dart';
+import '../../../inventory/data/models/product_model.dart';
 import '../../domain/repositories/pos_repository.dart';
 import '../models/sale_model.dart';
 
@@ -24,18 +25,27 @@ class PosRepositoryImpl implements PosRepository {
   PosRepositoryImpl(this._isar, this._syncService);
 
   String _getSalesPath(final String businessId) => 'businesses/$businessId/sales';
+  String _getProductsPath(final String businessId) => 'businesses/$businessId/products';
 
   @override
   Stream<List<SaleModel>> watchSales(final String businessId) {
-    // Note: In a full implementation, we would also pull sales from Firestore
-    // For now, we assume sales are primarily created locally and synced UP.
+    // Background pull for sales from Firestore so multi-device & web sales sync down
+    _syncService.pull<SaleModel>(
+      businessId: businessId,
+      collectionPath: _getSalesPath(businessId),
+      fromJsons: (final jsons) =>
+          jsons.map((final j) => SaleModel.fromJson(j)).toList(),
+    );
+
     return _isar.localSales
         .where()
         .filter()
         .businessIdEqualTo(businessId)
         .sortByTimestampDesc()
         .watch(fireImmediately: true)
-        .map((locals) => locals.map((l) => SaleModel.fromJson(jsonDecode(l.data))).toList());
+        .map((final locals) => locals
+            .map((final l) => SaleModel.fromJson(jsonDecode(l.data)))
+            .toList());
   }
 
   @override
@@ -49,9 +59,61 @@ class PosRepositoryImpl implements PosRepository {
     );
 
     await _isar.writeTxn(() async {
+      // 1. Save local sale record
       await _isar.localSales.put(local);
+
+      // 2. Offline POS: Deduct product stock immediately in local Isar cache
+      for (final item in sale.items) {
+        final localProd = await _isar.localProducts
+            .where()
+            .idEqualTo(item.productId)
+            .findFirst();
+
+        if (localProd != null) {
+          try {
+            final prodMap = jsonDecode(localProd.data) as Map<String, dynamic>;
+            final prod = ProductModel.fromJson(prodMap);
+            final updatedStockByLoc = Map<String, double>.from(prod.stockByLocation);
+            final currentStock = updatedStockByLoc[sale.locationId] ?? 0.0;
+            updatedStockByLoc[sale.locationId] = (currentStock - item.quantity);
+
+            final updatedProd = ProductModel(
+              id: prod.id,
+              name: prod.name,
+              sku: prod.sku,
+              description: prod.description,
+              category: prod.category,
+              cost: prod.cost,
+              price: prod.price,
+              stockByLocation: updatedStockByLoc,
+              unitSystemVersion: prod.unitSystemVersion,
+              unitChain: prod.unitChain,
+              priceConfigs: prod.priceConfigs,
+              isArchived: prod.isArchived,
+              sellingUnit: prod.sellingUnit,
+              purchaseUnit: prod.purchaseUnit,
+              updatedAt: DateTime.now(),
+              expirationDate: prod.expirationDate,
+            );
+
+            final updatedLocalProd = LocalProduct(
+              id: updatedProd.id,
+              name: updatedProd.name,
+              sku: updatedProd.sku,
+              businessId: sale.businessId,
+              isArchived: updatedProd.isArchived,
+              data: jsonEncode(updatedProd.toJson()),
+            );
+
+            await _isar.localProducts.put(updatedLocalProd);
+          } catch (_) {
+            // Keep going if one product parse fails
+          }
+        }
+      }
     });
 
+    // 3. Queue sale creation in sync queue for remote Firestore push
     await _syncService.addToQueue(
       action: 'create',
       collectionPath: _getSalesPath(sale.businessId),
@@ -68,7 +130,9 @@ class PosRepositoryImpl implements PosRepository {
         .businessIdEqualTo(businessId)
         .sortByTimestampDesc()
         .findAll();
-    
-    return locals.map((l) => SaleModel.fromJson(jsonDecode(l.data))).toList();
+
+    return locals
+        .map((final l) => SaleModel.fromJson(jsonDecode(l.data)))
+        .toList();
   }
 }

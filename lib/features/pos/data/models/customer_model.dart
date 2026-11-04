@@ -1,10 +1,11 @@
 import 'package:isar/isar.dart';
 import 'package:json_annotation/json_annotation.dart';
+import '../../../../core/utils/datetime_converter.dart';
 
 part 'customer_model.g.dart';
 
 @collection
-@JsonSerializable()
+@JsonSerializable(fieldRename: FieldRename.none)
 class CustomerModel {
   Id get isarId => _fastHash(id);
 
@@ -16,12 +17,15 @@ class CustomerModel {
   final String? address;
   
   /// The amount this customer owes the business
+  @JsonKey(defaultValue: 0.0)
   final double outstandingBalance;
   
   /// List of Sale IDs associated with this customer
+  @JsonKey(defaultValue: [])
   final List<String> purchaseHistory;
 
-  final DateTime createdAt;
+  @DateTimeConverter()
+  final DateTime? createdAt;
 
   const CustomerModel({
     required this.id,
@@ -35,21 +39,32 @@ class CustomerModel {
     required this.createdAt,
   });
 
-  factory CustomerModel.fromJson(final Map<String, dynamic> json) =>
-      _$CustomerModelFromJson(json);
+  factory CustomerModel.fromJson(final Map<String, dynamic> json) {
+    // Inject defaults for required fields if missing
+    json['id'] ??= 'unknown_id';
+    json['businessId'] ??= 'unknown_business';
+    json['name'] ??= 'Unnamed Customer';
+    
+    // Ensure numeric fields are doubles
+    if (json['outstandingBalance'] != null) {
+      json['outstandingBalance'] = (json['outstandingBalance'] as num).toDouble();
+    }
+    
+    return _$CustomerModelFromJson(json);
+  }
 
   Map<String, dynamic> toJson() => _$CustomerModelToJson(this);
 
   CustomerModel copyWith({
-    String? id,
-    String? businessId,
-    String? name,
-    String? phone,
-    String? email,
-    String? address,
-    double? outstandingBalance,
-    List<String>? purchaseHistory,
-    DateTime? createdAt,
+    final String? id,
+    final String? businessId,
+    final String? name,
+    final String? phone,
+    final String? email,
+    final String? address,
+    final double? outstandingBalance,
+    final List<String>? purchaseHistory,
+    final DateTime? createdAt,
   }) {
     return CustomerModel(
       id: id ?? this.id,
@@ -64,7 +79,7 @@ class CustomerModel {
     );
   }
 
-  int _fastHash(String string) {
+  int _fastHash(final String string) {
     var hash = 0xcbf29ce484222325;
     var i = 0;
     while (i < string.length) {

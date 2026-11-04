@@ -1,18 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/config/app_config.dart';
+import '../../../../shared/providers/auth_provider.dart';
 
-class OnboardingPage extends StatefulWidget {
+class OnboardingPage extends ConsumerStatefulWidget {
   const OnboardingPage({super.key});
 
   @override
-  State<OnboardingPage> createState() => _OnboardingPageState();
+  ConsumerState<OnboardingPage> createState() => _OnboardingPageState();
 }
 
-class _OnboardingPageState extends State<OnboardingPage> {
+class _OnboardingPageState extends ConsumerState<OnboardingPage> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
 
@@ -65,12 +67,12 @@ class _OnboardingPageState extends State<OnboardingPage> {
   }
 
   void _finishOnboarding() {
-    // TODO: Mark onboarding as completed in local storage
+    ref.read(authProvider.notifier).setInitialOnboardingDone();
     context.go('/login');
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -99,13 +101,13 @@ class _OnboardingPageState extends State<OnboardingPage> {
             Expanded(
               child: PageView.builder(
                 controller: _pageController,
-                onPageChanged: (index) {
+                onPageChanged: (final index) {
                   setState(() {
                     _currentPage = index;
                   });
                 },
                 itemCount: _onboardingItems.length,
-                itemBuilder: (context, index) {
+                itemBuilder: (final context, final index) {
                   final item = _onboardingItems[index];
                   return _OnboardingItemWidget(item: item);
                 },
@@ -122,7 +124,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                   Row(
                     children: List.generate(
                       _onboardingItems.length,
-                      (index) => Container(
+                      (final index) => Container(
                         margin: EdgeInsets.only(right: 8.w),
                         width: _currentPage == index ? 24.w : 8.w,
                         height: 8.h,
@@ -178,7 +180,7 @@ class _OnboardingItemWidget extends StatelessWidget {
   const _OnboardingItemWidget({required this.item});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 32.w),
       child: Column(

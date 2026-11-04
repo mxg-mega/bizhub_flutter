@@ -26,11 +26,11 @@ class CustomerPaymentModel {
     this.notes,
   });
 
-  factory CustomerPaymentModel.fromJson(Map<String, dynamic> json) =>
+  factory CustomerPaymentModel.fromJson(final Map<String, dynamic> json) =>
       _$CustomerPaymentModelFromJson(json);
   Map<String, dynamic> toJson() => _$CustomerPaymentModelToJson(this);
 
-  int _fastHash(String string) {
+  int _fastHash(final String string) {
     var hash = 0xcbf29ce484222325;
     var i = 0;
     while (i < string.length) {

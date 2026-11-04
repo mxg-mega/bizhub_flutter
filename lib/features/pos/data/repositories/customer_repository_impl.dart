@@ -31,7 +31,7 @@ class CustomerRepositoryImpl implements CustomerRepository {
     _syncService.pull<CustomerModel>(
       businessId: businessId,
       collectionPath: _getCustomersPath(businessId),
-      fromJsons: (final jsons) => jsons.map((j) => CustomerModel.fromJson(j)).toList(),
+      fromJsons: (final jsons) => jsons.map((final j) => CustomerModel.fromJson(j)).toList(),
     );
 
     return _isar.localCustomers
@@ -39,7 +39,7 @@ class CustomerRepositoryImpl implements CustomerRepository {
         .filter()
         .businessIdEqualTo(businessId)
         .watch(fireImmediately: true)
-        .map((locals) => locals.map((l) => CustomerModel.fromJson(jsonDecode(l.data))).toList());
+        .map((final locals) => locals.map((final l) => CustomerModel.fromJson(jsonDecode(l.data))).toList());
   }
 
   @override
@@ -73,10 +73,10 @@ class CustomerRepositoryImpl implements CustomerRepository {
     _syncService.pull<CustomerModel>(
       businessId: businessId,
       collectionPath: _getCustomersPath(businessId),
-      fromJsons: (final jsons) => jsons.map((j) => CustomerModel.fromJson(j)).toList(),
+      fromJsons: (final jsons) => jsons.map((final j) => CustomerModel.fromJson(j)).toList(),
     );
 
-    return locals.map((l) => CustomerModel.fromJson(jsonDecode(l.data))).toList();
+    return locals.map((final l) => CustomerModel.fromJson(jsonDecode(l.data))).toList();
   }
 
   @override

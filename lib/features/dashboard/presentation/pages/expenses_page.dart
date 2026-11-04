@@ -21,9 +21,9 @@ class ExpensesPage extends ConsumerWidget {
       body: RefreshIndicator(
         onRefresh: () async => ref.invalidate(expenseListProvider),
         child: expensesAsync.when(
-          data: (expenses) => _buildExpenseList(context, ref, expenses),
+          data: (final expenses) => _buildExpenseList(context, ref, expenses),
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (e, _) => Center(child: Text('Error: $e')),
+          error: (final e, _) => Center(child: Text('Error: $e')),
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
@@ -34,12 +34,12 @@ class ExpensesPage extends ConsumerWidget {
     );
   }
 
-  Widget _buildExpenseList(BuildContext context, WidgetRef ref, List<ExpenseModel> expenses) {
+  Widget _buildExpenseList(final BuildContext context, final WidgetRef ref, final List<ExpenseModel> expenses) {
     if (expenses.isEmpty) {
       return const Center(child: Text('No expenses recorded yet.'));
     }
 
-    final total = expenses.fold(0.0, (sum, e) => sum + e.amount);
+    final total = expenses.fold(0.0, (final sum, final e) => sum + e.amount);
 
     return Column(
       children: [
@@ -48,7 +48,7 @@ class ExpensesPage extends ConsumerWidget {
           child: ListView.builder(
             padding: EdgeInsets.all(16.w),
             itemCount: expenses.length,
-            itemBuilder: (context, index) {
+            itemBuilder: (final context, final index) {
               final expense = expenses[index];
               return _ExpenseCard(expense: expense);
             },
@@ -58,7 +58,7 @@ class ExpensesPage extends ConsumerWidget {
     );
   }
 
-  Widget _buildSummaryHeader(double total) => Container(
+  Widget _buildSummaryHeader(final double total) => Container(
       padding: EdgeInsets.all(24.w),
       width: double.infinity,
       color: Colors.red[50],
@@ -70,11 +70,11 @@ class ExpensesPage extends ConsumerWidget {
       ),
     );
 
-  void _showAddExpenseSheet(BuildContext context, WidgetRef ref) {
+  void _showAddExpenseSheet(final BuildContext context, final WidgetRef ref) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      builder: (context) => _AddExpenseForm(),
+      builder: (final context) => _AddExpenseForm(),
     );
   }
 }
@@ -91,7 +91,7 @@ class _AddExpenseFormState extends ConsumerState<_AddExpenseForm> {
   final List<String> _categories = ['Rent', 'Salaries', 'Utilities', 'Inventory', 'General', 'Marketing'];
 
   @override
-  Widget build(BuildContext context) => Padding(
+  Widget build(final BuildContext context) => Padding(
       padding: EdgeInsets.all(24.w).copyWith(bottom: MediaQuery.of(context).viewInsets.bottom + 24.w),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -105,9 +105,9 @@ class _AddExpenseFormState extends ConsumerState<_AddExpenseForm> {
           ),
           SizedBox(height: 16.h),
           DropdownButtonFormField<String>(
-            value: _category,
-            items: _categories.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
-            onChanged: (val) => setState(() => _category = val!),
+            initialValue: _category,
+            items: _categories.map((final c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
+            onChanged: (final val) => setState(() => _category = val!),
             decoration: const InputDecoration(labelText: 'Category'),
           ),
           SizedBox(height: 16.h),
@@ -149,7 +149,7 @@ class _ExpenseCard extends StatelessWidget {
   const _ExpenseCard({required this.expense});
 
   @override
-  Widget build(BuildContext context) => Card(
+  Widget build(final BuildContext context) => Card(
       elevation: 0,
       margin: EdgeInsets.only(bottom: 12.h),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r), side: BorderSide(color: Colors.grey[200]!)),

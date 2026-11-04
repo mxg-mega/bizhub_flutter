@@ -49,14 +49,11 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final authState = ref.watch(authProvider);
 
     // Listen to auth state changes
-    ref.listen<AuthState>(authProvider, (previous, next) {
-      if (next.user != null) {
-        context.go('/dashboard');
-      }
+    ref.listen<AuthState>(authProvider, (final previous, final next) {
       if (next.error != null) {
         ScaffoldMessenger.of(
           context,
@@ -133,7 +130,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                       borderRadius: BorderRadius.circular(12.r),
                     ),
                   ),
-                  validator: (value) {
+                  validator: (final value) {
                     if (value == null || value.isEmpty) {
                       return 'Please enter your name';
                     }
@@ -155,7 +152,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                       borderRadius: BorderRadius.circular(12.r),
                     ),
                   ),
-                  validator: (value) {
+                  validator: (final value) {
                     if (value == null || value.isEmpty) {
                       return 'Please enter your email';
                     }
@@ -194,7 +191,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                       borderRadius: BorderRadius.circular(12.r),
                     ),
                   ),
-                  validator: (value) {
+                  validator: (final value) {
                     if (value == null || value.isEmpty) {
                       return 'Please enter your password';
                     }
@@ -231,7 +228,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                       borderRadius: BorderRadius.circular(12.r),
                     ),
                   ),
-                  validator: (value) {
+                  validator: (final value) {
                     if (value == null || value.isEmpty) {
                       return 'Please confirm your password';
                     }
@@ -284,7 +281,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                     'assets/icons/google.png',
                     height: 20.h,
                     width: 20.w,
-                    errorBuilder: (context, error, stackTrace) =>
+                    errorBuilder: (final context, final error, final stackTrace) =>
                         const Icon(Icons.g_mobiledata, color: Colors.red),
                   ),
                   label: Text(

@@ -5,7 +5,7 @@ class BusinessProfilePage extends ConsumerWidget {
   const BusinessProfilePage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     return const Placeholder();
   }
 }

@@ -8,7 +8,7 @@ import '../../../../core/services/finance_service.dart';
 import '../../../../core/database/isar_service.dart';
 import '../../../../shared/providers/auth_provider.dart';
 
-final profitLossProvider = FutureProvider<ProfitLossReport>((ref) async {
+final profitLossProvider = FutureProvider<ProfitLossReport>((final ref) async {
   final isar = ref.watch(isarDatabaseProvider).value;
   final businessId = ref.watch(currentBusinessProvider)?.id;
   if (isar == null || businessId == null) throw Exception('Not initialized');
@@ -30,14 +30,14 @@ class AnalyticsPage extends ConsumerWidget {
     return Scaffold(
       appBar: const CommonAppBar(),
       body: reportAsync.when(
-        data: (report) => _buildReportView(context, report),
+        data: (final report) => _buildReportView(context, report),
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Error: $e')),
+        error: (final e, _) => Center(child: Text('Error: $e')),
       ),
     );
   }
 
-  Widget _buildReportView(BuildContext context, ProfitLossReport report) {
+  Widget _buildReportView(final BuildContext context, final ProfitLossReport report) {
     return SingleChildScrollView(
       padding: EdgeInsets.all(16.w),
       child: Column(
@@ -75,7 +75,7 @@ class _FinancialSummaryGrid extends StatelessWidget {
   const _FinancialSummaryGrid({required this.report});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     return GridView.count(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -101,7 +101,7 @@ class _SummaryCard extends StatelessWidget {
   const _SummaryCard({required this.title, required this.value, required this.color});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     return Container(
       padding: EdgeInsets.all(16.w),
       decoration: BoxDecoration(

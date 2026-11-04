@@ -66,7 +66,7 @@ class DashboardPage extends ConsumerWidget {
     );
   }
 
-  Widget _buildHeader(String name) => Column(
+  Widget _buildHeader(final String name) => Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
@@ -87,7 +87,7 @@ class DashboardPage extends ConsumerWidget {
       ],
     );
 
-  Widget _buildSectionTitle(String title) => Text(
+  Widget _buildSectionTitle(final String title) => Text(
       title,
       style: GoogleFonts.inter(
         fontSize: 18.sp,
@@ -97,20 +97,20 @@ class DashboardPage extends ConsumerWidget {
     );
 
   Widget _buildKPISection(
-    AsyncValue<List<ProductModel>> productsAsync, 
-    AsyncValue<List<SaleModel>> salesAsync, 
-    BuildContext context
+    final AsyncValue<List<ProductModel>> productsAsync, 
+    final AsyncValue<List<SaleModel>> salesAsync, 
+    final BuildContext context
   ) {
     final totalProducts = productsAsync.maybeWhen(
-      data: (List<ProductModel> p) => p.length, 
+      data: (final List<ProductModel> p) => p.length, 
       orElse: () => 0
     );
     final revenueToday = salesAsync.maybeWhen(
-      data: (List<SaleModel> sales) {
+      data: (final List<SaleModel> sales) {
         final today = DateTime.now();
         return sales
-            .where((SaleModel s) => s.timestamp.year == today.year && s.timestamp.month == today.month && s.timestamp.day == today.day)
-            .fold(0.0, (double sum, SaleModel s) => sum + s.total);
+            .where((final SaleModel s) => s.timestamp.year == today.year && s.timestamp.month == today.month && s.timestamp.day == today.day)
+            .fold(0.0, (final double sum, final SaleModel s) => sum + s.total);
       },
       orElse: () => 0.0,
     );
@@ -144,7 +144,7 @@ class DashboardPage extends ConsumerWidget {
     );
   }
 
-  Widget _buildQuickActions(BuildContext context) => SizedBox(
+  Widget _buildQuickActions(final BuildContext context) => SizedBox(
       height: 100.h,
       child: ListView(
         scrollDirection: Axis.horizontal,
@@ -173,12 +173,12 @@ class DashboardPage extends ConsumerWidget {
       ),
     );
 
-  Widget _buildRecentSales(AsyncValue<List<SaleModel>> salesAsync) => salesAsync.when(
-      data: (List<SaleModel> sales) {
+  Widget _buildRecentSales(final AsyncValue<List<SaleModel>> salesAsync) => salesAsync.when(
+      data: (final List<SaleModel> sales) {
         if (sales.isEmpty) return const Text('No sales recorded today.');
         final recent = sales.take(3).toList();
         return Column(
-          children: recent.map((SaleModel s) => ListTile(
+          children: recent.map((final SaleModel s) => ListTile(
             contentPadding: EdgeInsets.zero,
             leading: CircleAvatar(backgroundColor: Colors.green[50], child: const Icon(Icons.receipt_long, color: Colors.green, size: 20)),
             title: Text('Sale #${s.id.substring(0, 6).toUpperCase()}'),
@@ -188,16 +188,16 @@ class DashboardPage extends ConsumerWidget {
         );
       },
       loading: () => const LinearProgressIndicator(),
-      error: (e, _) => Text('Error: $e'),
+      error: (final e, _) => Text('Error: $e'),
     );
 
-  Widget _buildInventorySummary(AsyncValue<List<ProductModel>> productsAsync) => productsAsync.when(
-      data: (List<ProductModel> products) {
-        final lowStock = products.where((ProductModel p) => p.totalStock < 10).take(3).toList();
+  Widget _buildInventorySummary(final AsyncValue<List<ProductModel>> productsAsync) => productsAsync.when(
+      data: (final List<ProductModel> products) {
+        final lowStock = products.where((final ProductModel p) => p.totalStock < 10).take(3).toList();
         if (lowStock.isEmpty) return const Text('Inventory levels are healthy.');
 
         return Column(
-          children: lowStock.map((ProductModel p) => ListTile(
+          children: lowStock.map((final ProductModel p) => ListTile(
             contentPadding: EdgeInsets.zero,
             leading: CircleAvatar(backgroundColor: Colors.red[50], child: const Icon(Icons.warning, color: Colors.red, size: 20)),
             title: Text(p.name),
@@ -207,7 +207,7 @@ class DashboardPage extends ConsumerWidget {
         );
       },
       loading: () => const SizedBox.shrink(),
-      error: (e, _) => const SizedBox.shrink(),
+      error: (final e, _) => const SizedBox.shrink(),
     );
 }
 
@@ -225,7 +225,7 @@ class _KPICard extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) => Container(
+  Widget build(final BuildContext context) => Container(
       padding: EdgeInsets.all(16.w),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -251,7 +251,7 @@ class _QuickActionItem extends StatelessWidget {
   const _QuickActionItem({required this.label, required this.icon, required this.onTap});
 
   @override
-  Widget build(BuildContext context) => GestureDetector(
+  Widget build(final BuildContext context) => GestureDetector(
       onTap: onTap,
       child: Container(
         width: 90.w,

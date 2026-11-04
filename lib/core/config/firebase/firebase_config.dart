@@ -4,7 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
-import 'package:biz_module/firebase_options.dart';
+import '../../../firebase_options.dart';
 
 class FirebaseConfig {
   static FirebaseAuth? _auth;
@@ -99,7 +99,7 @@ class FirebaseConfig {
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
     // Handle foreground messages
-    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+    FirebaseMessaging.onMessage.listen((final RemoteMessage message) {
       if (kDebugMode) {
         print('Got a message whilst in the foreground!');
         print('Message data: ${message.data}');
@@ -113,7 +113,7 @@ class FirebaseConfig {
     });
 
     // Handle when app is opened from notification
-    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+    FirebaseMessaging.onMessageOpenedApp.listen((final RemoteMessage message) {
       if (kDebugMode) {
         print('A new onMessageOpenedApp event was published!');
       }
@@ -123,7 +123,7 @@ class FirebaseConfig {
 }
 
 // This needs to be a top-level function
-Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+Future<void> _firebaseMessagingBackgroundHandler(final RemoteMessage message) async {
   await Firebase.initializeApp();
   if (kDebugMode) {
     print('Handling a background message: ${message.messageId}');

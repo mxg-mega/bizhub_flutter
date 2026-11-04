@@ -41,14 +41,14 @@ class ImportWizard extends _$ImportWizard {
       return;
     }
 
-    final headers = rows.first.map((e) => e.toString()).toList();
+    final headers = rows.first.map((final e) => e.toString()).toList();
     final data = rows.sublist(1);
 
     state = state.copyWith(
       step: ImportStep.mapping,
       headers: headers,
       rawData: data,
-      mappings: headers.map((h) => ImportMapping(userHeader: h)).toList(),
+      mappings: headers.map((final h) => ImportMapping(userHeader: h)).toList(),
     );
 
     await autoMapColumns();
@@ -61,7 +61,7 @@ class ImportWizard extends _$ImportWizard {
       systemFields: _systemFields,
     );
 
-    final newMappings = state.mappings.map((m) {
+    final newMappings = state.mappings.map((final m) {
       if (suggestions.containsKey(m.userHeader)) {
         return m.copyWith(systemField: suggestions[m.userHeader]);
       }
@@ -71,8 +71,8 @@ class ImportWizard extends _$ImportWizard {
     state = state.copyWith(mappings: newMappings);
   }
 
-  void updateMapping(String userHeader, String? systemField, bool isIgnored) {
-    final newMappings = state.mappings.map((m) {
+  void updateMapping(final String userHeader, final String? systemField, final bool isIgnored) {
+    final newMappings = state.mappings.map((final m) {
       if (m.userHeader == userHeader) {
         return m.copyWith(systemField: systemField, isIgnored: isIgnored);
       }

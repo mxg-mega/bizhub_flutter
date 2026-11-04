@@ -8,13 +8,13 @@ import '../../../features/pos/data/models/sale_model.dart';
 import '../../../shared/models/business_model.dart';
 
 class ReceiptService {
-  static Future<void> generateAndShareReceipt(SaleModel sale, BusinessModel business) async {
+  static Future<void> generateAndShareReceipt(final SaleModel sale, final BusinessModel business) async {
     final pdf = pw.Document();
 
     pdf.addPage(
       pw.Page(
         pageFormat: PdfPageFormat.roll80, // Typical thermal paper width
-        build: (pw.Context context) => pw.Column(
+        build: (final pw.Context context) => pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
               pw.Center(
@@ -36,7 +36,7 @@ class ReceiptService {
                       pw.Text('Price', textAlign: pw.TextAlign.right, style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
                     ],
                   ),
-                  ...sale.items.map((item) => pw.TableRow(
+                  ...sale.items.map((final item) => pw.TableRow(
                     children: [
                       pw.Text(item.name),
                       pw.Text(item.quantity.toString(), textAlign: pw.TextAlign.center),
@@ -64,19 +64,19 @@ class ReceiptService {
 
     // Save PDF to temp file
     final output = await getTemporaryDirectory();
-    final file = File("${output.path}/receipt_${sale.id.substring(0, 8)}.pdf");
+    final file = File('${output.path}/receipt_${sale.id.substring(0, 8)}.pdf');
     await file.writeAsBytes(await pdf.save());
 
     // Share via share_plus
     await Share.shareXFiles([XFile(file.path)], text: 'Receipt from ${business.name}');
   }
 
-  static Future<void> printToThermal(SaleModel sale, BusinessModel business) async {
+  static Future<void> printToThermal(final SaleModel sale, final BusinessModel business) async {
     // This requires a connected Bluetooth printer. 
     // For now, we open the native print dialog which works with thermal printers if installed.
     final pdf = pw.Document();
     // (Build the same PDF as above)
     // ...
-    await Printing.layoutPdf(onLayout: (PdfPageFormat format) async => pdf.save());
+    await Printing.layoutPdf(onLayout: (final PdfPageFormat format) async => pdf.save());
   }
 }

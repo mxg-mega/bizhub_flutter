@@ -17,18 +17,18 @@ class CurrencyNotifier extends _$CurrencyNotifier {
       return [_defaultCurrency()];
     }
 
-    return currenciesJson.map((c) => CurrencyModel.fromJson(c)).toList();
+    return currenciesJson.map((final c) => CurrencyModel.fromJson(c)).toList();
   }
 
   CurrencyModel _defaultCurrency() => const CurrencyModel(code: 'NGN', symbol: '₦', isBase: true);
 
-  CurrencyModel get baseCurrency => state.firstWhere((c) => c.isBase, orElse: () => state.first);
+  CurrencyModel get baseCurrency => state.firstWhere((final c) => c.isBase, orElse: () => state.first);
 
-  double convert(double amount, String fromCode, String toCode) {
+  double convert(final double amount, final String fromCode, final String toCode) {
     if (fromCode == toCode) return amount;
     
-    final from = state.firstWhere((c) => c.code == fromCode, orElse: () => _defaultCurrency());
-    final to = state.firstWhere((c) => c.code == toCode, orElse: () => _defaultCurrency());
+    final from = state.firstWhere((final c) => c.code == fromCode, orElse: () => _defaultCurrency());
+    final to = state.firstWhere((final c) => c.code == toCode, orElse: () => _defaultCurrency());
 
     // amount * (toRate / fromRate)
     return amount * (to.rateToBase / from.rateToBase);

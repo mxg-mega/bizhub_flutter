@@ -1,6 +1,8 @@
 import 'dart:convert';
+import 'package:cloud_firestore/cloud_firestore.dart' hide Query;
 import 'package:isar/isar.dart';
 import 'package:json_annotation/json_annotation.dart';
+import '../../../../core/utils/datetime_converter.dart';
 
 part 'stock_in_model.g.dart';
 
@@ -25,6 +27,7 @@ class StockInModel {
   final double totalCost;
   final bool isPaid; // Cash vs Credit purchase
   
+  @DateTimeConverter()
   final DateTime timestamp;
   final String? notes;
 
@@ -39,13 +42,35 @@ class StockInModel {
     this.isPaid = true,
     required this.timestamp,
     this.notes,
-  }) : itemsJson = jsonEncode(items.map((i) => i.toJson()).toList());
+  }) : itemsJson = jsonEncode(items.map((final i) => i.toJson()).toList());
 
-  factory StockInModel.fromJson(Map<String, dynamic> json) =>
-      _$StockInModelFromJson(json);
+  factory StockInModel.fromJson(final Map<String, dynamic> json) {
+    final copy = Map<String, dynamic>.from(json);
+    copy['id'] ??= 'unknown_id';
+    copy['businessId'] ??= copy['business_id'] ?? '';
+    copy['supplierId'] ??= copy['supplier_id'] ?? '';
+    copy['supplierName'] ??= copy['supplier_name'] ?? 'Supplier';
+    copy['locationId'] ??= copy['location_id'] ?? 'main';
+    copy['totalCost'] = ((copy['totalCost'] ?? copy['total_cost'] ?? 0.0) as num).toDouble();
+    copy['isPaid'] ??= true;
+
+    dynamic rawDate = copy['timestamp'] ?? copy['createdAt'] ?? copy['date'];
+    if (rawDate is Timestamp) {
+      copy['timestamp'] = rawDate.toDate().toIso8601String();
+    } else if (rawDate is DateTime) {
+      copy['timestamp'] = rawDate.toIso8601String();
+    } else if (rawDate is String && rawDate.isNotEmpty) {
+      copy['timestamp'] = rawDate;
+    } else {
+      copy['timestamp'] = DateTime.now().toIso8601String();
+    }
+
+    return _$StockInModelFromJson(copy);
+  }
+
   Map<String, dynamic> toJson() => _$StockInModelToJson(this);
 
-  int _fastHash(String string) {
+  int _fastHash(final String string) {
     var hash = 0xcbf29ce484222325;
     var i = 0;
     while (i < string.length) {
@@ -74,7 +99,15 @@ class StockInItem {
     this.costPrice = 0.0,
   });
 
-  factory StockInItem.fromJson(Map<String, dynamic> json) =>
-      _$StockInItemFromJson(json);
+  factory StockInItem.fromJson(final Map<String, dynamic> json) {
+    final copy = Map<String, dynamic>.from(json);
+    copy['productId'] ??= copy['product_id'] ?? '';
+    copy['name'] ??= '';
+    copy['quantity'] = ((copy['quantity'] ?? 0.0) as num).toDouble();
+    copy['unit'] ??= '';
+    copy['costPrice'] = ((copy['costPrice'] ?? copy['cost_price'] ?? 0.0) as num).toDouble();
+    return _$StockInItemFromJson(copy);
+  }
+
   Map<String, dynamic> toJson() => _$StockInItemToJson(this);
 }

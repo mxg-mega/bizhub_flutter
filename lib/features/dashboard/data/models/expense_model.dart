@@ -1,5 +1,7 @@
+import 'package:cloud_firestore/cloud_firestore.dart' hide Query;
 import 'package:isar/isar.dart';
 import 'package:json_annotation/json_annotation.dart';
+import '../../../../core/utils/datetime_converter.dart';
 
 part 'expense_model.g.dart';
 
@@ -8,16 +10,12 @@ part 'expense_model.g.dart';
 class ExpenseModel {
   Id get isarId => _fastHash(id);
 
-  @Index(unique: true, replace: true)
   final String id;
-  
-  @Index()
   final String businessId;
-  
   final String category; // 'Rent', 'Salaries', 'Utilities', 'Inventory', 'Other'
   final double amount;
   
-  @Index()
+  @DateTimeConverter()
   final DateTime date;
   
   final String? description;
@@ -35,12 +33,30 @@ class ExpenseModel {
     this.userId,
   });
 
-  factory ExpenseModel.fromJson(final Map<String, dynamic> json) =>
-      _$ExpenseModelFromJson(json);
+  factory ExpenseModel.fromJson(final Map<String, dynamic> json) {
+    final copy = Map<String, dynamic>.from(json);
+    copy['id'] ??= 'unknown_id';
+    copy['businessId'] ??= copy['business_id'] ?? '';
+    copy['category'] ??= 'Other';
+    copy['amount'] = ((copy['amount'] ?? 0.0) as num).toDouble();
+
+    dynamic rawDate = copy['date'] ?? copy['createdAt'];
+    if (rawDate is Timestamp) {
+      copy['date'] = rawDate.toDate().toIso8601String();
+    } else if (rawDate is DateTime) {
+      copy['date'] = rawDate.toIso8601String();
+    } else if (rawDate is String && rawDate.isNotEmpty) {
+      copy['date'] = rawDate;
+    } else {
+      copy['date'] = DateTime.now().toIso8601String();
+    }
+
+    return _$ExpenseModelFromJson(copy);
+  }
 
   Map<String, dynamic> toJson() => _$ExpenseModelToJson(this);
 
-  int _fastHash(String string) {
+  int _fastHash(final String string) {
     var hash = 0xcbf29ce484222325;
     var i = 0;
     while (i < string.length) {

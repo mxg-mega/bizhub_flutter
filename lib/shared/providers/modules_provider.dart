@@ -1,120 +1,78 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'dart:async';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'auth_provider.dart';
+import '../../core/services/module_service.dart';
 
-import '../../core/config/app_config.dart';
+part 'modules_provider.g.dart';
 
-// Module State
-class ModuleState {
-  final List<String> enabledModules;
-  final bool isLoading;
-  final String? error;
+@riverpod
+class ModulesNotifier extends _$ModulesNotifier {
+  final ModuleService _moduleService = ModuleService();
+  StreamSubscription? _subscription;
 
-  const ModuleState({
-    this.enabledModules = const [],
-    this.isLoading = false,
-    this.error,
-  });
-
-  ModuleState copyWith({
-    List<String>? enabledModules,
-    bool? isLoading,
-    String? error,
-  }) {
-    return ModuleState(
-      enabledModules: enabledModules ?? this.enabledModules,
-      isLoading: isLoading ?? this.isLoading,
-      error: error ?? this.error,
-    );
-  }
-}
-
-// Modules Notifier
-class ModulesNotifier extends StateNotifier<ModuleState> {
-  ModulesNotifier() : super(const ModuleState()) {
-    _loadModules();
-  }
-
-  Future<void> _loadModules() async {
-    state = state.copyWith(isLoading: true);
+  @override
+  List<String> build() {
+    final business = ref.watch(currentBusinessProvider);
     
-    try {
-      // TODO: Load modules from Firebase/local storage
-      await Future.delayed(const Duration(milliseconds: 500));
-      
-      // Mock enabled modules
-      final enabledModules = ['inventory', 'sales'];
-      state = state.copyWith(
-        enabledModules: enabledModules,
-        isLoading: false,
-      );
-    } catch (error) {
-      state = state.copyWith(
-        isLoading: false,
-        error: error.toString(),
-      );
+    if (business == null || business.id == null) {
+      return [];
+    }
+
+    // Subscribe to real-time updates
+    _subscription?.cancel();
+    _subscription = _moduleService.subscribeToEnabledModules(business.id!).listen((final ids) {
+      state = ids;
+    });
+
+    ref.onDispose(() {
+      _subscription?.cancel();
+    });
+
+    // Load initial state
+    _loadInitialModules(business.id!);
+
+    return [];
+  }
+
+  Future<void> _loadInitialModules(final String businessId) async {
+    final ids = await _moduleService.getEnabledModuleIds(businessId);
+    if (ids.isEmpty) {
+      // Use defaults if nothing found
+      state = ['inventory', 'pos', 'dashboard'];
+    } else {
+      state = ids;
     }
   }
 
-  Future<void> toggleModule(String moduleName) async {
-    try {
-      final currentModules = List<String>.from(state.enabledModules);
-      
-      if (currentModules.contains(moduleName)) {
-        currentModules.remove(moduleName);
-      } else {
-        currentModules.add(moduleName);
+  Future<void> toggleModule(final String moduleId) async {
+    final business = ref.read(currentBusinessProvider);
+    if (business == null || business.id == null) return;
+
+    final isCurrentlyEnabled = state.contains(moduleId);
+    final newState = !isCurrentlyEnabled;
+
+    // Optimistic Update
+    final currentModules = List<String>.from(state);
+    if (newState) {
+      if (!currentModules.contains(moduleId)) {
+        currentModules.add(moduleId);
       }
-      
-      // TODO: Update modules in Firebase
-      await Future.delayed(const Duration(milliseconds: 300));
-      
-      state = state.copyWith(enabledModules: currentModules);
-    } catch (error) {
-      state = state.copyWith(error: error.toString());
+    } else {
+      currentModules.remove(moduleId);
+    }
+    state = currentModules;
+
+    // Firestore Commit
+    try {
+      await _moduleService.setModuleEnabled(
+        businessId: business.id!,
+        moduleId: moduleId,
+        isEnabled: newState,
+      );
+    } catch (e) {
+      // Revert on failure if needed, or just let the stream sync it back
     }
   }
 
-  Future<void> enableModule(String moduleName) async {
-    if (!state.enabledModules.contains(moduleName)) {
-      await toggleModule(moduleName);
-    }
-  }
-
-  Future<void> disableModule(String moduleName) async {
-    if (state.enabledModules.contains(moduleName)) {
-      await toggleModule(moduleName);
-    }
-  }
-
-  bool isModuleEnabled(String moduleName) {
-    return state.enabledModules.contains(moduleName);
-  }
-
-  List<String> getAvailableModules() {
-    return AppConfig.availableModules;
-  }
-
-  List<String> getEnabledModules() {
-    return state.enabledModules;
-  }
-
-  List<String> getDisabledModules() {
-    return AppConfig.availableModules
-        .where((module) => !state.enabledModules.contains(module))
-        .toList();
-  }
+  bool isModuleEnabled(final String moduleId) => state.contains(moduleId);
 }
-
-// Providers
-final modulesProvider = StateNotifierProvider<ModulesNotifier, ModuleState>((ref) {
-  return ModulesNotifier();
-});
-
-final enabledModulesProvider = Provider<List<String>>((ref) {
-  final modulesState = ref.watch(modulesProvider);
-  return modulesState.enabledModules;
-});
-
-final isModuleEnabledProvider = Provider.family<bool, String>((ref, moduleName) {
-  final modulesState = ref.watch(modulesProvider);
-  return modulesState.enabledModules.contains(moduleName);
-}); 

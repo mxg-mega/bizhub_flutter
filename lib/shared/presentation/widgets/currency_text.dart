@@ -18,7 +18,7 @@ class CurrencyText extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     final displayCurrency = ref.watch(activeDisplayCurrencyProvider);
     final notifier = ref.read(currencyNotifierProvider.notifier);
     

@@ -58,7 +58,7 @@ class _AcceptInvitePageState extends ConsumerState<AcceptInvitePage> {
       }
 
       // 4. Accept Invitation (Transactional)
-      await employeeRepo.acceptInvitation(widget.inviteId, auth.user!.uid);
+      await employeeRepo.acceptInvitation(widget.inviteId, auth.user!.id);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -74,7 +74,7 @@ class _AcceptInvitePageState extends ConsumerState<AcceptInvitePage> {
   }
 
   @override
-  Widget build(BuildContext context) => Scaffold(
+  Widget build(final BuildContext context) => Scaffold(
       body: Center(
         child: Padding(
           padding: EdgeInsets.all(32.w),

@@ -30,7 +30,7 @@ class LocationRepositoryImpl implements LocationRepository {
     _syncService.pull<LocationModel>(
       businessId: businessId,
       collectionPath: _getLocationsPath(businessId),
-      fromJsons: (final jsons) => jsons.map((j) => LocationModel.fromJson(j)).toList(),
+      fromJsons: (final jsons) => jsons.map((final j) => LocationModel.fromJson(j)).toList(),
     );
 
     return _isar.localLocations
@@ -38,7 +38,7 @@ class LocationRepositoryImpl implements LocationRepository {
         .filter()
         .businessIdEqualTo(businessId)
         .watch(fireImmediately: true)
-        .map((locals) => locals.map((l) => LocationModel.fromJson(jsonDecode(l.data))).toList());
+        .map((final locals) => locals.map((final l) => LocationModel.fromJson(jsonDecode(l.data))).toList());
   }
 
   @override
@@ -52,10 +52,10 @@ class LocationRepositoryImpl implements LocationRepository {
     _syncService.pull<LocationModel>(
       businessId: businessId,
       collectionPath: _getLocationsPath(businessId),
-      fromJsons: (final jsons) => jsons.map((j) => LocationModel.fromJson(j)).toList(),
+      fromJsons: (final jsons) => jsons.map((final j) => LocationModel.fromJson(j)).toList(),
     );
 
-    return locals.map((l) => LocationModel.fromJson(jsonDecode(l.data))).toList();
+    return locals.map((final l) => LocationModel.fromJson(jsonDecode(l.data))).toList();
   }
 
   @override

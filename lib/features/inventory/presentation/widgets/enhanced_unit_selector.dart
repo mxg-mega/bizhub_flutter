@@ -45,19 +45,23 @@ class EnhancedUnitSelector extends StatelessWidget {
           SizedBox(height: 6.h),
         ],
         DropdownButtonFormField<String>(
-          value: currentValue,
+          initialValue: currentValue,
           isExpanded: true,
           decoration: InputDecoration(
-            prefixIcon: Icon(Icons.unfold_more_outlined, size: 20.w),
+            prefixIcon: Icon(Icons.unfold_more_outlined, size: 20.w, color: Colors.blue[700]),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12.r),
-              borderSide: BorderSide(color: Colors.grey[300]!),
+              borderSide: BorderSide.none,
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12.r),
-              borderSide: BorderSide(color: Colors.grey[300]!),
+              borderSide: BorderSide.none,
             ),
-            contentPadding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 12.h),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12.r),
+              borderSide: BorderSide(color: Colors.blue[400]!, width: 1.5),
+            ),
+            contentPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
             filled: true,
             fillColor: Colors.grey[50],
           ),
@@ -83,7 +87,7 @@ class EnhancedUnitSelector extends StatelessWidget {
                         borderRadius: BorderRadius.circular(6.r),
                       ),
                       child: Text(
-                        '${price.toStringAsFixed(2)}',
+                        price.toStringAsFixed(2),
                         style: GoogleFonts.inter(
                           fontSize: 11.sp,
                           color: Colors.blue[700],

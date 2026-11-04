@@ -16,8 +16,8 @@ class ThemeState {
   });
 
   ThemeState copyWith({
-    ThemeMode? themeMode,
-    bool? isDarkMode,
+    final ThemeMode? themeMode,
+    final bool? isDarkMode,
   }) {
     return ThemeState(
       themeMode: themeMode ?? this.themeMode,
@@ -45,7 +45,7 @@ class ThemeNotifier extends StateNotifier<ThemeState> {
     }
   }
 
-  Future<void> setThemeMode(ThemeMode themeMode) async {
+  Future<void> setThemeMode(final ThemeMode themeMode) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setInt(AppConfig.themeModeKey, themeMode.index);
@@ -57,7 +57,7 @@ class ThemeNotifier extends StateNotifier<ThemeState> {
     }
   }
 
-  void _updateDarkMode(ThemeMode themeMode) {
+  void _updateDarkMode(final ThemeMode themeMode) {
     bool isDark;
     
     switch (themeMode) {
@@ -85,7 +85,7 @@ class ThemeNotifier extends StateNotifier<ThemeState> {
         seedColor: AppConfig.primaryColor,
         brightness: Brightness.light,
       ),
-      appBarTheme: AppBarTheme(
+      appBarTheme: const AppBarTheme(
         backgroundColor: AppConfig.primaryColor,
         foregroundColor: Colors.white,
         elevation: 0,
@@ -163,16 +163,16 @@ class ThemeNotifier extends StateNotifier<ThemeState> {
 }
 
 // Providers
-final themeProvider = StateNotifierProvider<ThemeNotifier, ThemeState>((ref) {
+final themeProvider = StateNotifierProvider<ThemeNotifier, ThemeState>((final ref) {
   return ThemeNotifier();
 });
 
-final themeModeProvider = Provider<ThemeMode>((ref) {
+final themeModeProvider = Provider<ThemeMode>((final ref) {
   final themeState = ref.watch(themeProvider);
   return themeState.themeMode;
 });
 
-final isDarkModeProvider = Provider<bool>((ref) {
+final isDarkModeProvider = Provider<bool>((final ref) {
   final themeState = ref.watch(themeProvider);
   return themeState.isDarkMode;
 });

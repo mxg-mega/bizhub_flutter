@@ -39,7 +39,7 @@ class ProductRepositoryImpl implements ProductRepository {
         debugPrint(
           'DEBUG: Received ${jsons.length} products from Firestore for business: $businessId',
         );
-        return jsons.map((j) {
+        return jsons.map((final j) {
           debugPrint('DEBUG: Product JSON: $j');
           return ProductModel.fromJson(j);
         }).toList();
@@ -55,12 +55,12 @@ class ProductRepositoryImpl implements ProductRepository {
         .and()
         .isArchivedEqualTo(false)
         .watch(fireImmediately: true)
-        .map((locals) {
+        .map((final locals) {
           debugPrint(
             'DEBUG: Isar emitted ${locals.length} local products for business: $businessId',
           );
           return locals
-              .map((l) => ProductModel.fromJson(jsonDecode(l.data)))
+              .map((final l) => ProductModel.fromJson(jsonDecode(l.data)))
               .toList();
         });
   }
@@ -79,12 +79,12 @@ class ProductRepositoryImpl implements ProductRepository {
       businessId: businessId,
       collectionPath: _getProductsPath(businessId),
       fromJsons: (final jsons) =>
-          jsons.map((j) => ProductModel.fromJson(j)).toList(),
+          jsons.map((final j) => ProductModel.fromJson(j)).toList(),
       where: {'isArchived': false},
     );
 
     return locals
-        .map((l) => ProductModel.fromJson(jsonDecode(l.data)))
+        .map((final l) => ProductModel.fromJson(jsonDecode(l.data)))
         .toList();
   }
 

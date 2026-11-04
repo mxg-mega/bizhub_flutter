@@ -21,6 +21,7 @@ class ReceiptTemplateModel {
   
   final String fontSize;
   final String paperSize;
+  final String layoutStyle; // 'Classic', 'Minimal', 'Modern'
 
   final DateTime updatedAt;
 
@@ -35,6 +36,7 @@ class ReceiptTemplateModel {
     this.showDiscount = true,
     this.fontSize = 'medium',
     this.paperSize = '58mm',
+    this.layoutStyle = 'Classic',
     required this.updatedAt,
   });
 
@@ -51,6 +53,7 @@ class ReceiptTemplateModel {
         showDiscount: true,
         fontSize: 'medium',
         paperSize: '58mm',
+        layoutStyle: 'Classic',
       );
 
   factory ReceiptTemplateModel.fromJson(final Map<String, dynamic> json) =>
@@ -67,6 +70,7 @@ class ReceiptTemplateModel {
     final bool? showDiscount,
     final String? fontSize,
     final String? paperSize,
+    final String? layoutStyle,
     final DateTime? updatedAt,
   }) =>
       ReceiptTemplateModel(
@@ -80,6 +84,7 @@ class ReceiptTemplateModel {
         showDiscount: showDiscount ?? this.showDiscount,
         fontSize: fontSize ?? this.fontSize,
         paperSize: paperSize ?? this.paperSize,
+        layoutStyle: layoutStyle ?? this.layoutStyle,
         updatedAt: updatedAt ?? this.updatedAt,
       );
 

@@ -28,7 +28,7 @@ class SupplierRepositoryImpl implements SupplierRepository {
     _syncService.pull<SupplierModel>(
       businessId: businessId,
       collectionPath: _getSuppliersPath(businessId),
-      fromJsons: (final jsons) => jsons.map((j) => SupplierModel.fromJson(j)).toList(),
+      fromJsons: (final jsons) => jsons.map((final j) => SupplierModel.fromJson(j)).toList(),
     );
 
     return _isar.supplierModels

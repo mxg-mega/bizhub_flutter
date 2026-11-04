@@ -24,7 +24,7 @@ class AppSettings {
     required this.lastUpdated,
   });
 
-  factory AppSettings.fromJson(Map<String, dynamic> json) =>
+  factory AppSettings.fromJson(final Map<String, dynamic> json) =>
       _$AppSettingsFromJson(json);
   Map<String, dynamic> toJson() => _$AppSettingsToJson(this);
 
@@ -42,14 +42,14 @@ class AppSettings {
   }
 
   AppSettings copyWith({
-    String? themeMode,
-    String? language,
-    bool? notificationsEnabled,
-    bool? analyticsEnabled,
-    bool? crashlyticsEnabled,
-    bool? offlineModeEnabled,
-    Map<String, dynamic>? customSettings,
-    DateTime? lastUpdated,
+    final String? themeMode,
+    final String? language,
+    final bool? notificationsEnabled,
+    final bool? analyticsEnabled,
+    final bool? crashlyticsEnabled,
+    final bool? offlineModeEnabled,
+    final Map<String, dynamic>? customSettings,
+    final DateTime? lastUpdated,
   }) {
     return AppSettings(
       themeMode: themeMode ?? this.themeMode,

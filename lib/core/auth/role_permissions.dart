@@ -1,85 +1,58 @@
+import '../../shared/models/permission_model.dart';
+
 enum AppPermission {
-  // Inventory
-  viewInventory,
-  manageInventory, // Create, Edit, Delete
-  adjustStock,
-  transferStock,
-  exportInventory,
+  inventory,
+  pos,
+  analytics,
+  expenses,
+  employees,
+  settings,
+  zakat_tracker,
+  receipts;
 
-  // POS
-  createSale,
-  viewOwnSales,
-  viewAllSales,
-  approveSale, 
-  approvePayment,
-  approveRefund,
-  refundSale,
-
-  // Financials
-  viewAnalytics,
-  manageExpenses,
-
-  // Management
-  manageEmployees,
-  editSettings,
+  static AppPermission fromString(final String? value) {
+    return AppPermission.values.firstWhere(
+      (final e) => e.name == value,
+      orElse: () => AppPermission.pos,
+    );
+  }
 }
 
-enum AppRole {
-  owner,
-  admin,
-  pharmacist, // Mapping Sales Rep to Documentation naming
-  cashier,
-  inventoryManager;
+class PermissionManager {
+  static bool hasPermission({
+    required final RoleModel role,
+    required final String module,
+    final String action = 'view',
+    final bool useFineGrained = false,
+  }) {
+    // If it's a system role (Owner/Admin), they have full access
+    if (role.isSystem) return true;
 
-  static AppRole fromString(final String? role) {
-    switch (role?.toLowerCase()) {
-      case 'owner':
-        return AppRole.owner;
-      case 'admin':
-        return AppRole.admin;
-      case 'pharmacist':
-      case 'sales_rep':
-        return AppRole.pharmacist;
-      case 'cashier':
-        return AppRole.cashier;
-      case 'inventory_manager':
-        return AppRole.inventoryManager;
+    if (!useFineGrained) {
+      // Legacy check: list of module IDs
+      return role.permissions.contains(module);
+    }
+
+    // Enhanced check: permissionsMap
+    final map = role.permissionsMap;
+    if (map == null || !map.containsKey(module)) return false;
+
+    final actions = map[module]!;
+    switch (action.toLowerCase()) {
+      case 'view':
+        return actions.view;
+      case 'create':
+        return actions.create;
+      case 'edit':
+        return actions.edit;
+      case 'delete':
+        return actions.delete;
+      case 'approve':
+        return actions.approve;
+      case 'export':
+        return actions.export;
       default:
-        return AppRole.pharmacist;
+        return false;
     }
   }
-
-  bool get isSystem => this == AppRole.owner || this == AppRole.admin;
-
-  Set<AppPermission> get permissions {
-    switch (this) {
-      case AppRole.owner:
-        return AppPermission.values.toSet();
-      case AppRole.admin:
-        // Admin has everything except deleting the business (effectively everything in this app)
-        return AppPermission.values.toSet();
-      case AppRole.pharmacist:
-        return {
-          AppPermission.viewInventory,
-          AppPermission.createSale,
-          AppPermission.viewOwnSales,
-        };
-      case AppRole.cashier:
-        return {
-          AppPermission.viewInventory,
-          AppPermission.createSale,
-          AppPermission.viewAllSales,
-          AppPermission.approvePayment,
-        };
-      case AppRole.inventoryManager:
-        return {
-          AppPermission.viewInventory,
-          AppPermission.manageInventory,
-          AppPermission.adjustStock,
-          AppPermission.transferStock,
-        };
-    }
-  }
-
-  bool hasPermission(final AppPermission permission) => permissions.contains(permission);
 }

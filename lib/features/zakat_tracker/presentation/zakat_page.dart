@@ -3,8 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'providers/zakat_calculation_provider.dart';
+import 'providers/inventory_worth_provider.dart';
 import '../data/zakat_calculation_model.dart';
 import '../../../shared/presentation/widgets/common_app_bar.dart';
+import '../../../shared/providers/auth_provider.dart';
 
 class ZakatPage extends ConsumerStatefulWidget {
   const ZakatPage({super.key});
@@ -23,6 +25,20 @@ class _ZakatPageState extends ConsumerState<ZakatPage> {
   final _liabilitiesController = TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+    // Auto-fetch inventory value
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _autoFetchInventoryValue();
+    });
+  }
+
+  Future<void> _autoFetchInventoryValue() async {
+    final worth = await ref.read(totalInventoryWorthProvider.future);
+    _businessAssetsController.text = worth.toStringAsFixed(2);
+  }
+
+  @override
   void dispose() {
     _cashController.dispose();
     _businessAssetsController.dispose();
@@ -31,14 +47,14 @@ class _ZakatPageState extends ConsumerState<ZakatPage> {
     super.dispose();
   }
 
-  void _calculate() {
+  void _calculate(final String currencyCode) {
     if (_formKey.currentState!.validate()) {
       ref.read(zakatCalculationFlowProvider.notifier).performCalculation(
         cash: double.tryParse(_cashController.text) ?? 0,
         businessAssets: double.tryParse(_businessAssetsController.text) ?? 0,
         investments: double.tryParse(_investmentsController.text),
         liabilities: double.tryParse(_liabilitiesController.text) ?? 0,
-        currency: 'USD', // Could be dynamic in a real app
+        currency: currencyCode,
       );
     }
   }
@@ -46,10 +62,12 @@ class _ZakatPageState extends ConsumerState<ZakatPage> {
   @override
   Widget build(final BuildContext context) {
     final calculationState = ref.watch(zakatCalculationFlowProvider);
+    final business = ref.watch(currentBusinessProvider);
+    final currencyCode = business?.settings?['currencyCode'] ?? 'USD';
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: const CommonAppBar(),
+      appBar: const CommonAppBar(title: 'Zakat Tracker'),
       body: SingleChildScrollView(
         padding: EdgeInsets.all(20.w),
         child: Column(
@@ -57,9 +75,9 @@ class _ZakatPageState extends ConsumerState<ZakatPage> {
           children: [
             _buildHeader(theme),
             SizedBox(height: 24.h),
-            _buildInputForm(theme),
+            _buildInputForm(theme, currencyCode),
             SizedBox(height: 32.h),
-            _buildCalculateButton(calculationState.isLoading),
+            _buildCalculateButton(calculationState.isLoading, currencyCode),
             if (calculationState.hasValue && calculationState.value != null) ...[
               SizedBox(height: 32.h),
               _buildResultsCard(theme, calculationState.value!),
@@ -96,7 +114,7 @@ class _ZakatPageState extends ConsumerState<ZakatPage> {
       ],
     );
 
-  Widget _buildInputForm(final ThemeData theme) => Form(
+  Widget _buildInputForm(final ThemeData theme, final String currencyCode) => Form(
       key: _formKey,
       child: Column(
         children: [
@@ -104,18 +122,22 @@ class _ZakatPageState extends ConsumerState<ZakatPage> {
             controller: _cashController,
             label: 'Total Cash & Bank Balance',
             icon: Icons.account_balance_wallet_outlined,
+            suffix: currencyCode,
           ),
           SizedBox(height: 16.h),
           _buildTextField(
             controller: _businessAssetsController,
             label: 'Business Assets (Stock/Inventory)',
             icon: Icons.inventory_2_outlined,
+            suffix: currencyCode,
+            isAutoFetched: true,
           ),
           SizedBox(height: 16.h),
           _buildTextField(
             controller: _investmentsController,
             label: 'Investments (Stocks/Funds)',
             icon: Icons.trending_up_outlined,
+            suffix: currencyCode,
             isOptional: true,
           ),
           SizedBox(height: 16.h),
@@ -123,6 +145,7 @@ class _ZakatPageState extends ConsumerState<ZakatPage> {
             controller: _liabilitiesController,
             label: 'Total Liabilities/Debts',
             icon: Icons.money_off_outlined,
+            suffix: currencyCode,
           ),
         ],
       ),
@@ -132,14 +155,17 @@ class _ZakatPageState extends ConsumerState<ZakatPage> {
     required final TextEditingController controller,
     required final String label,
     required final IconData icon,
+    required final String suffix,
     final bool isOptional = false,
+    final bool isAutoFetched = false,
   }) => TextFormField(
       controller: controller,
       keyboardType: TextInputType.number,
       decoration: InputDecoration(
         labelText: label,
         prefixIcon: Icon(icon, size: 20.w),
-        suffixText: 'USD',
+        suffixText: suffix,
+        helperText: isAutoFetched ? 'Auto-calculated from your inventory' : null,
         hintText: isOptional ? 'Optional' : '0.00',
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.r)),
         enabledBorder: OutlineInputBorder(
@@ -158,11 +184,11 @@ class _ZakatPageState extends ConsumerState<ZakatPage> {
       },
     );
 
-  Widget _buildCalculateButton(final bool isLoading) => SizedBox(
+  Widget _buildCalculateButton(final bool isLoading, final String currencyCode) => SizedBox(
       width: double.infinity,
       height: 56.h,
       child: ElevatedButton(
-        onPressed: isLoading ? null : _calculate,
+        onPressed: isLoading ? null : () => _calculate(currencyCode),
         style: ElevatedButton.styleFrom(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
           elevation: 2,

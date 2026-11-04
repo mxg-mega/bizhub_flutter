@@ -69,7 +69,7 @@ class IsarService {
         .isArchivedEqualTo(false)
         .findAll();
     
-    return locals.map((l) => ProductModel.fromJson(jsonDecode(l.data))).toList();
+    return locals.map((final l) => ProductModel.fromJson(jsonDecode(l.data))).toList();
   }
 
   Future<void> saveLocation(final String businessId, final LocationModel location) async {
@@ -89,7 +89,7 @@ class IsarService {
         .businessIdEqualTo(businessId)
         .findAll();
     
-    return locals.map((l) => LocationModel.fromJson(jsonDecode(l.data))).toList();
+    return locals.map((final l) => LocationModel.fromJson(jsonDecode(l.data))).toList();
   }
 
   // POS Helpers
@@ -111,6 +111,6 @@ class IsarService {
         .businessIdEqualTo(businessId)
         .sortByTimestampDesc()
         .findAll();
-    return locals.map((l) => SaleModel.fromJson(jsonDecode(l.data))).toList();
+    return locals.map((final l) => SaleModel.fromJson(jsonDecode(l.data))).toList();
   }
 }

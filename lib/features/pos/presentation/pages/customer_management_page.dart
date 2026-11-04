@@ -24,9 +24,9 @@ class CustomerManagementPage extends ConsumerWidget {
       body: RefreshIndicator(
         onRefresh: () async => ref.invalidate(customerListProvider),
         child: customersAsync.when(
-          data: (customers) => _buildCustomerList(context, ref, customers),
+          data: (final customers) => _buildCustomerList(context, ref, customers),
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (e, _) => Center(child: Text('Error: $e')),
+          error: (final e, _) => Center(child: Text('Error: $e')),
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
@@ -37,7 +37,7 @@ class CustomerManagementPage extends ConsumerWidget {
     );
   }
 
-  Widget _buildCustomerList(BuildContext context, WidgetRef ref, List<CustomerModel> customers) {
+  Widget _buildCustomerList(final BuildContext context, final WidgetRef ref, final List<CustomerModel> customers) {
     if (customers.isEmpty) {
       return const Center(child: Text('No customers found.'));
     }
@@ -45,7 +45,7 @@ class CustomerManagementPage extends ConsumerWidget {
     return ListView.builder(
       padding: EdgeInsets.all(16.w),
       itemCount: customers.length,
-      itemBuilder: (context, index) {
+      itemBuilder: (final context, final index) {
         final customer = customers[index];
         return Card(
           margin: EdgeInsets.only(bottom: 12.h),
@@ -95,10 +95,10 @@ class CustomerManagementPage extends ConsumerWidget {
     );
   }
 
-  Future<void> _generateStatement(BuildContext context, WidgetRef ref, CustomerModel customer) async {
+  Future<void> _generateStatement(final BuildContext context, final WidgetRef ref, final CustomerModel customer) async {
     final business = ref.read(currentBusinessProvider);
     final allSales = await ref.read(salesHistoryProvider.future);
-    final customerSales = allSales.where((s) => s?.customerId == customer.id).toList();
+    final customerSales = allSales.where((final s) => s.customerId == customer.id).toList();
     
     // For payments, we need to fetch from the provider
     final payments = await ref.read(customerPaymentsProvider(customer.id).future);
@@ -113,13 +113,13 @@ class CustomerManagementPage extends ConsumerWidget {
     await Share.shareXFiles([XFile(file.path)], text: 'Statement for ${customer.name}');
   }
 
-  void _showAddCustomerDialog(BuildContext context, WidgetRef ref) {
+  void _showAddCustomerDialog(final BuildContext context, final WidgetRef ref) {
     final nameController = TextEditingController();
     final phoneController = TextEditingController();
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (final context) => AlertDialog(
         title: const Text('New Customer'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -157,14 +157,14 @@ class CustomerManagementPage extends ConsumerWidget {
     );
   }
 
-  void _showRecordPaymentDialog(BuildContext context, WidgetRef ref, CustomerModel customer) {
+  void _showRecordPaymentDialog(final BuildContext context, final WidgetRef ref, final CustomerModel customer) {
     final amountController = TextEditingController();
     String method = 'cash';
 
     showDialog(
       context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
+      builder: (final context) => StatefulBuilder(
+        builder: (final context, final setDialogState) => AlertDialog(
           title: Text('Record Payment: ${customer.name}'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
@@ -176,13 +176,13 @@ class CustomerManagementPage extends ConsumerWidget {
               ),
               SizedBox(height: 16.h),
               DropdownButtonFormField<String>(
-                value: method,
+                initialValue: method,
                 decoration: const InputDecoration(labelText: 'Payment Method'),
                 items: const [
                   DropdownMenuItem(value: 'cash', child: Text('Cash')),
                   DropdownMenuItem(value: 'transfer', child: Text('Bank Transfer')),
                 ],
-                onChanged: (val) => setDialogState(() => method = val!),
+                onChanged: (final val) => setDialogState(() => method = val!),
               ),
             ],
           ),

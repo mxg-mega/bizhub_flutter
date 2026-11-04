@@ -1,4 +1,5 @@
 import 'package:json_annotation/json_annotation.dart';
+import '../../core/utils/datetime_converter.dart';
 
 part 'module_model.g.dart';
 
@@ -6,32 +7,41 @@ part 'module_model.g.dart';
 class ModuleModel {
   final String id;
   final String name;
-  final String description;
+  final String path;
   final String icon;
-  final String category;
-  final bool isEnabled;
+  final bool isActive;
+  final bool isInstalled;
+  final bool enabledByDefault;
   final bool isPremium;
-  // settings can be a complex object, so we use Map<String, dynamic>
-  // but they should be defined in a way that they can be easily serialized and deserialized
-  // also they are used to store user-specific configurations for each module, so they should be flexible and extensible to accommodate different types of settings for different modules
-  final Map<String, dynamic> settings;
-  // dependencies can be a list of module names that this module depends on, which can be used to ensure that the required modules are enabled before enabling this module, and to manage the relationships between different modules in the app
-  final List<String> dependencies;
-  final DateTime createdAt;
-  final DateTime updatedAt;
+  final String category;
+  final String? permissionId;
+  
+  final String? description;
+  final Map<String, dynamic>? settings;
+  final List<String>? dependencies;
+  
+  @DateTimeConverter()
+  final DateTime? createdAt;
+  
+  @DateTimeConverter()
+  final DateTime? updatedAt;
 
   const ModuleModel({
     required this.id,
     required this.name,
-    required this.description,
+    required this.path,
     required this.icon,
+    this.isActive = true,
+    this.isInstalled = false,
+    this.enabledByDefault = false,
+    this.isPremium = false,
     required this.category,
-    required this.isEnabled,
-    required this.isPremium,
-    required this.settings,
-    required this.dependencies,
-    required this.createdAt,
-    required this.updatedAt,
+    this.permissionId,
+    this.description,
+    this.settings,
+    this.dependencies,
+    this.createdAt,
+    this.updatedAt,
   });
 
   factory ModuleModel.fromJson(final Map<String, dynamic> json) =>
@@ -41,11 +51,15 @@ class ModuleModel {
   ModuleModel copyWith({
     final String? id,
     final String? name,
-    final String? description,
+    final String? path,
     final String? icon,
-    final String? category,
-    final bool? isEnabled,
+    final bool? isActive,
+    final bool? isInstalled,
+    final bool? enabledByDefault,
     final bool? isPremium,
+    final String? category,
+    final String? permissionId,
+    final String? description,
     final Map<String, dynamic>? settings,
     final List<String>? dependencies,
     final DateTime? createdAt,
@@ -54,11 +68,15 @@ class ModuleModel {
     return ModuleModel(
       id: id ?? this.id,
       name: name ?? this.name,
-      description: description ?? this.description,
+      path: path ?? this.path,
       icon: icon ?? this.icon,
-      category: category ?? this.category,
-      isEnabled: isEnabled ?? this.isEnabled,
+      isActive: isActive ?? this.isActive,
+      isInstalled: isInstalled ?? this.isInstalled,
+      enabledByDefault: enabledByDefault ?? this.enabledByDefault,
       isPremium: isPremium ?? this.isPremium,
+      category: category ?? this.category,
+      permissionId: permissionId ?? this.permissionId,
+      description: description ?? this.description,
       settings: settings ?? this.settings,
       dependencies: dependencies ?? this.dependencies,
       createdAt: createdAt ?? this.createdAt,

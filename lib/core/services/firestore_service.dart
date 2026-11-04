@@ -11,30 +11,66 @@ class FirestoreService {
 
   static FirebaseFirestore get _db => FirebaseConfig.firestore;
 
-  static CollectionReference<Map<String, dynamic>> collection(String path) {
+  static CollectionReference<Map<String, dynamic>> collection(final String path) {
     return _db.collection(path);
   }
 
-  static DocumentReference<Map<String, dynamic>> doc(String path) {
+  static DocumentReference<Map<String, dynamic>> doc(final String path) {
     return _db.doc(path);
   }
 
   static DocumentReference<Map<String, dynamic>> docIn(
-    String collectionPath,
-    String id,
+    final String collectionPath,
+    final String id,
   ) {
     return _db.collection(collectionPath).doc(id);
   }
 
+  static Map<String, dynamic> sanitizeForFirestore(final Map<String, dynamic> data) {
+    final Map<String, dynamic> result = {};
+    data.forEach((final key, final value) {
+      if (value == null) return;
+      if (value is String && _isTimestampField(key)) {
+        final parsed = DateTime.tryParse(value);
+        if (parsed != null) {
+          result[key] = Timestamp.fromDate(parsed);
+          return;
+        }
+      }
+      if (value is DateTime) {
+        result[key] = Timestamp.fromDate(value);
+        return;
+      }
+      if (value is Map<String, dynamic>) {
+        result[key] = sanitizeForFirestore(value);
+        return;
+      }
+      result[key] = value;
+    });
+    return result;
+  }
+
+  static bool _isTimestampField(final String key) {
+    final lower = key.toLowerCase();
+    return lower.contains('date') ||
+        lower.contains('time') ||
+        lower.contains('createdat') ||
+        lower.contains('updatedat') ||
+        lower.contains('joinedat') ||
+        lower.contains('timestamp');
+  }
+
   static Future<T?> getById<T>({
-    required String collectionPath,
-    required String id,
-    required FromJson<T> fromJson,
+    required final String collectionPath,
+    required final String id,
+    required final FromJson<T> fromJson,
   }) async {
     try {
       final snapshot = await _db.collection(collectionPath).doc(id).get();
       if (!snapshot.exists || snapshot.data() == null) return null;
-      return fromJson(snapshot.data()!);
+      final data = Map<String, dynamic>.from(snapshot.data()!);
+      if (!data.containsKey('id')) data['id'] = snapshot.id;
+      return fromJson(data);
     } catch (e) {
       if (kDebugMode) {
         print('FirestoreService.getById error: $e');
@@ -44,58 +80,62 @@ class FirestoreService {
   }
 
   static Stream<T?> watchById<T>({
-    required String collectionPath,
-    required String id,
-    required FromJson<T> fromJson,
+    required final String collectionPath,
+    required final String id,
+    required final FromJson<T> fromJson,
   }) {
-    return _db.collection(collectionPath).doc(id).snapshots().map((snap) {
+    return _db.collection(collectionPath).doc(id).snapshots().map((final snap) {
       if (!snap.exists || snap.data() == null) return null;
-      return fromJson(snap.data()!);
+      final data = Map<String, dynamic>.from(snap.data()!);
+      if (!data.containsKey('id')) data['id'] = snap.id;
+      return fromJson(data);
     });
   }
 
   static Future<void> setById<T>({
-    required String collectionPath,
-    required String id,
-    required T value,
-    required ToJson<T> toJson,
-    bool merge = false,
+    required final String collectionPath,
+    required final String id,
+    required final T value,
+    required final ToJson<T> toJson,
+    final bool merge = false,
   }) async {
+    final data = sanitizeForFirestore(toJson(value));
     await _db
         .collection(collectionPath)
         .doc(id)
-        .set(toJson(value), SetOptions(merge: merge));
+        .set(data, SetOptions(merge: merge));
   }
 
   static Future<void> updateById({
-    required String collectionPath,
-    required String id,
-    required Map<String, dynamic> data,
+    required final String collectionPath,
+    required final String id,
+    required final Map<String, dynamic> data,
   }) async {
-    await _db.collection(collectionPath).doc(id).update(data);
+    final sanitizedData = sanitizeForFirestore(data);
+    await _db.collection(collectionPath).doc(id).update(sanitizedData);
   }
 
   static Future<void> deleteById({
-    required String collectionPath,
-    required String id,
+    required final String collectionPath,
+    required final String id,
   }) async {
     await _db.collection(collectionPath).doc(id).delete();
   }
 
   static Future<T> runTransaction<T>(
-    Future<T> Function(Transaction transaction) updateFunction,
+    final Future<T> Function(Transaction transaction) updateFunction,
   ) async {
     return await _db.runTransaction(updateFunction);
   }
 
   static Future<List<T>> query<T>({
-    required String collectionPath,
-    required FromJson<T> fromJson,
-    List<Query<Map<String, dynamic>> Function(Query<Map<String, dynamic>> q)>
+    required final String collectionPath,
+    required final FromJson<T> fromJson,
+    final List<Query<Map<String, dynamic>> Function(Query<Map<String, dynamic>> q)>
         where =
         const [],
-    int? limit,
-    List<OrderBy> orderBy = const [],
+    final int? limit,
+    final List<OrderBy> orderBy = const [],
   }) async {
     Query<Map<String, dynamic>> q = _db.collection(collectionPath);
     for (final w in where) {
@@ -107,8 +147,12 @@ class FirestoreService {
     if (limit != null) q = q.limit(limit);
     final snapshot = await q.get();
     return snapshot.docs
-        .map((d) => d.data())
-        .where((m) => m.isNotEmpty)
+        .map((final d) {
+          final data = Map<String, dynamic>.from(d.data());
+          if (!data.containsKey('id')) data['id'] = d.id;
+          return data;
+        })
+        .where((final m) => m.isNotEmpty)
         .map(fromJson)
         .toList(growable: false);
   }

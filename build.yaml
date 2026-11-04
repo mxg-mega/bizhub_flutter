@@ -6,11 +6,7 @@ targets:
           # Options for json_serializable
           include_if_null: false
           explicit_to_json: true
-          field_rename: snake
-      retrofit_generator:retrofit:
-        options:
-          # Options for retrofit_generator
-          generate_provider: true
+          field_rename: none
       hive_generator:hive_generator:
         options:
           # Options for hive_generator

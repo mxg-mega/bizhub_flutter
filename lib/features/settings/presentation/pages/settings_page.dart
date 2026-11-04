@@ -19,9 +19,10 @@ class SettingsPage extends ConsumerStatefulWidget {
 
 class _SettingsPageState extends ConsumerState<SettingsPage> {
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final settings = ref.watch(appSettingsNotifierProvider);
     final authState = ref.watch(authProvider);
+    final currentRole = ref.watch(currentRoleProvider);
     final user = authState.user;
     final business = authState.activeBusiness;
 
@@ -47,7 +48,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                   title: 'Push Notifications',
                   subtitle: 'Receive notifications about your business',
                   value: settings.notificationsEnabled,
-                  onChanged: (value) {
+                  onChanged: (final value) {
                     ref.read(appSettingsNotifierProvider.notifier).updateSettings(
                       settings.copyWith(notificationsEnabled: value),
                     );
@@ -58,7 +59,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                   title: 'Force Offline Mode',
                   subtitle: 'Pause cloud synchronization',
                   value: settings.offlineModeEnabled,
-                  onChanged: (value) {
+                  onChanged: (final value) {
                     ref.read(appSettingsNotifierProvider.notifier).toggleOfflineMode(value);
                   },
                 ),
@@ -67,7 +68,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                   title: 'Dark Mode',
                   subtitle: 'Use dark theme',
                   value: settings.themeMode == 'dark',
-                  onChanged: (value) {
+                  onChanged: (final value) {
                     ref.read(appSettingsNotifierProvider.notifier).updateSettings(
                       settings.copyWith(themeMode: value ? 'dark' : 'light'),
                     );
@@ -79,7 +80,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             SizedBox(height: 24.h),
 
             // Business Rules Section (Manager/Owner only, synced to Cloud)
-            if (user?.hasPermission(AppPermission.editSettings) ?? false) ...[
+            if (user?.hasPermission(role: currentRole, module: 'settings', action: 'edit') ?? false) ...[
               _SettingsSection(
                 title: 'Business Rules',
                 children: [
@@ -88,8 +89,8 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                     title: 'Require Sales Approval',
                     subtitle: 'Managers must approve sales before stock deduction',
                     value: business?.settings?['requireApproval'] ?? false,
-                    onChanged: (value) {
-                      ref.read(authProvider.notifier).updateBusinessSettings({'requireApproval': value});
+                    onChanged: (final value) {
+                      // ref.read(authProvider.notifier).updateBusinessSettings({'requireApproval': value});
                     },
                   ),
                 ],
@@ -107,7 +108,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                   subtitle: 'Choose your preferred language',
                   value: settings.language == 'en' ? 'English' : 'Spanish',
                   items: const ['English', 'Spanish', 'French', 'German'],
-                  onChanged: (value) {
+                  onChanged: (final value) {
                     ref.read(appSettingsNotifierProvider.notifier).updateSettings(
                       settings.copyWith(language: value == 'English' ? 'en' : 'es'),
                     );
@@ -143,7 +144,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             _SettingsSection(
               title: 'About',
               children: [
-                _SettingsOption(
+                const _SettingsOption(
                   icon: Icons.info,
                   title: 'App Version',
                   subtitle: AppConfig.appVersion,
@@ -181,7 +182,7 @@ class _SettingsSection extends StatelessWidget {
   const _SettingsSection({required this.title, required this.children});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -223,7 +224,7 @@ class _SettingsSwitch extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     return ListTile(
       leading: Icon(icon, color: AppConfig.primaryColor),
       title: Text(title, style: GoogleFonts.inter(fontWeight: FontWeight.w500)),
@@ -234,7 +235,7 @@ class _SettingsSwitch extends StatelessWidget {
       trailing: Switch(
         value: value,
         onChanged: onChanged,
-        activeColor: AppConfig.primaryColor,
+        activeThumbColor: AppConfig.primaryColor,
       ),
     );
   }
@@ -258,7 +259,7 @@ class _SettingsDropdown extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     return ListTile(
       leading: Icon(icon, color: AppConfig.primaryColor),
       title: Text(title, style: GoogleFonts.inter(fontWeight: FontWeight.w500)),
@@ -268,7 +269,7 @@ class _SettingsDropdown extends StatelessWidget {
       ),
       trailing: DropdownButton<String>(
         value: value,
-        items: items.map((String item) {
+        items: items.map((final String item) {
           return DropdownMenuItem<String>(value: item, child: Text(item));
         }).toList(),
         onChanged: onChanged,
@@ -292,7 +293,7 @@ class _SettingsOption extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     return ListTile(
       leading: Icon(icon, color: AppConfig.primaryColor),
       title: Text(title, style: GoogleFonts.inter(fontWeight: FontWeight.w500)),

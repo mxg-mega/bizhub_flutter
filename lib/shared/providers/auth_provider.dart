@@ -4,32 +4,51 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../models/business_model.dart';
 import '../models/user_model.dart';
 import '../models/auth_result.dart';
+import '../models/membership_model.dart';
+import '../models/permission_model.dart';
 import '../../core/services/auth_service.dart';
+import '../../core/services/role_service.dart';
 
-// Simple Auth State
+// Enhanced Auth State
 class AuthState {
   final UserModel? user;
   final BusinessModel? activeBusiness;
+  final MembershipModel? currentMembership;
+  final RoleModel? currentRole;
   final bool isLoading;
+  final bool isOnboarding; // Business Onboarding
+  final bool isInitialOnboardingDone; // App Initial Onboarding
   final String? error;
 
   const AuthState({
     this.user,
     this.activeBusiness,
+    this.currentMembership,
+    this.currentRole,
     this.isLoading = false,
+    this.isOnboarding = false,
+    this.isInitialOnboardingDone = false,
     this.error,
   });
 
   AuthState copyWith({
-    UserModel? user,
-    bool? isLoading,
-    String? error,
-    BusinessModel? activeBusiness,
+    final UserModel? user,
+    final BusinessModel? activeBusiness,
+    final MembershipModel? currentMembership,
+    final RoleModel? currentRole,
+    final bool? isLoading,
+    final bool? isOnboarding,
+    final bool? isInitialOnboardingDone,
+    final String? error,
   }) {
     return AuthState(
       user: user ?? this.user,
       activeBusiness: activeBusiness ?? this.activeBusiness,
+      currentMembership: currentMembership ?? this.currentMembership,
+      currentRole: currentRole ?? this.currentRole,
       isLoading: isLoading ?? this.isLoading,
+      isOnboarding: isOnboarding ?? this.isOnboarding,
+      isInitialOnboardingDone: isInitialOnboardingDone ?? this.isInitialOnboardingDone,
       error: error ?? this.error,
     );
   }
@@ -37,8 +56,16 @@ class AuthState {
 
 // Auth Notifier
 class AuthNotifier extends StateNotifier<AuthState> {
+  final RoleService _roleService = RoleService();
+
   AuthNotifier() : super(const AuthState()) {
-    _checkAuthStatus();
+    _initialize();
+  }
+
+  Future<void> _initialize() async {
+    final isInitialDone = await AuthService.isOnboardingCompleted();
+    state = state.copyWith(isInitialOnboardingDone: isInitialDone);
+    await _checkAuthStatus();
     _listenToAuthChanges();
   }
 
@@ -46,64 +73,125 @@ class AuthNotifier extends StateNotifier<AuthState> {
     state = state.copyWith(isLoading: true);
 
     try {
-      // Check if user is signed in to Firebase
       final firebaseUser = AuthService.currentUser;
       if (firebaseUser != null) {
-        // Get user data from Firestore
         final userModel = await AuthService.getUserFromLocalStorage();
-        final businessModel = await AuthService.getBusinessFromLocalStorage();
-        if (userModel != null && businessModel != null) {
-          state = state.copyWith(
-            user: userModel,
-            activeBusiness: businessModel,
-            isLoading: false,
-          );
+
+        if (userModel != null) {
+          final businessModel = await AuthService.getBusinessFromLocalStorage();
+          
+          if (!userModel.onboardingCompleted || userModel.businessIds.isEmpty) {
+            state = state.copyWith(
+              user: userModel,
+              activeBusiness: businessModel, // Still set it if we have it locally
+              isLoading: false,
+              isOnboarding: true,
+            );
+            if (businessModel != null && userModel.businessIds.contains(businessModel.id)) {
+              await _fetchMembershipAndRole(userModel.id, businessModel.id!);
+            }
+            return;
+          }
+
+          if (businessModel != null) {
+            state = state.copyWith(
+              user: userModel,
+              activeBusiness: businessModel,
+              isLoading: false,
+              isOnboarding: false,
+            );
+            await _fetchMembershipAndRole(userModel.id, businessModel.id!);
+          } else {
+            // Business not in local storage but onboarding is done, try to fetch first business
+            final firstBusinessId = userModel.businessIds.first;
+            final businessFromFirestore =
+                await AuthService.getBusinessFromFirestore(firstBusinessId);
+            if (businessFromFirestore != null) {
+              await AuthService.saveBusinessToLocalStorage(
+                businessFromFirestore,
+              );
+              state = state.copyWith(
+                user: userModel,
+                activeBusiness: businessFromFirestore,
+                isLoading: false,
+                isOnboarding: false,
+              );
+              await _fetchMembershipAndRole(userModel.id, firstBusinessId);
+            }
+          }
         } else {
-          // Try to get from Firestore
+          // No user in local storage, fetch from firestore
           final userFromFirestore = await AuthService.getUserFromFirestore(
             firebaseUser.uid,
           );
-
           if (userFromFirestore != null) {
             await AuthService.saveUserToLocalStorage(userFromFirestore);
-            final businessFromFirestore =
-                await AuthService.getBusinessFromFirestore(
-                  userFromFirestore.businessIds?.first.keys.first ?? '',
+
+            if (!userFromFirestore.onboardingCompleted ||
+                userFromFirestore.businessIds.isEmpty) {
+              state = state.copyWith(
+                user: userFromFirestore,
+                isLoading: false,
+                isOnboarding: true,
+              );
+            } else {
+              final businessId = userFromFirestore.businessIds.first;
+              final businessFromFirestore =
+                  await AuthService.getBusinessFromFirestore(businessId);
+              if (businessFromFirestore != null) {
+                await AuthService.saveBusinessToLocalStorage(
+                  businessFromFirestore,
                 );
-            if (businessFromFirestore != null) {
-              state = state.copyWith(activeBusiness: businessFromFirestore);
+                state = state.copyWith(
+                  user: userFromFirestore,
+                  activeBusiness: businessFromFirestore,
+                  isLoading: false,
+                  isOnboarding: false,
+                );
+                await _fetchMembershipAndRole(userFromFirestore.id, businessId);
+              }
             }
-            state = state.copyWith(user: userFromFirestore, isLoading: false);
-          } else {
-            state = state.copyWith(isLoading: false);
           }
         }
-      } else {
-        state = state.copyWith(isLoading: false);
       }
+      state = state.copyWith(isLoading: false);
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
 
+  Future<void> _fetchMembershipAndRole(final String userId, final String businessId) async {
+    try {
+      final membership = await _roleService.getMembership(
+        businessId: businessId,
+        userId: userId,
+      );
+      if (membership != null) {
+        final role = await _roleService.getRole(
+          businessId: businessId,
+          roleId: membership.roleId,
+        );
+        state = state.copyWith(
+          currentMembership: membership,
+          currentRole: role,
+        );
+      }
+    } catch (e) {
+      // Log error but don't break auth state
+    }
+  }
+
   void _listenToAuthChanges() {
-    AuthService.authStateChanges.listen((User? user) async {
+    AuthService.authStateChanges.listen((final User? user) async {
       if (user != null) {
-        final userModel = await AuthService.getUserFromLocalStorage();
-        final businessModel = await AuthService.getBusinessFromLocalStorage();
-        if (userModel != null && businessModel != null) {
-          state = state.copyWith(
-            user: userModel,
-            activeBusiness: businessModel,
-          );
-        }
+        await _checkAuthStatus();
       } else {
-        state = state.copyWith(user: null, activeBusiness: null);
+        state = const AuthState();
       }
     });
   }
 
-  Future<void> signIn(String email, String password) async {
+  Future<void> signIn(final String email, final String password) async {
     state = state.copyWith(isLoading: true, error: null);
 
     final result = await AuthService.signInWithEmailAndPassword(
@@ -111,21 +199,32 @@ class AuthNotifier extends StateNotifier<AuthState> {
       password: password,
     );
 
-    if (result.success &&
-        result.user != null &&
-        result.activeBusiness != null) {
-      // TODO: integrate tracking of active business model
-      state = state.copyWith(
-        user: result.user,
-        activeBusiness: result.activeBusiness,
-        isLoading: false,
-      );
+    if (result.success && result.user != null) {
+      if (!result.user!.onboardingCompleted ||
+          result.user!.businessIds.isEmpty) {
+        state = state.copyWith(
+          user: result.user,
+          isLoading: false,
+          isOnboarding: true,
+        );
+      } else if (result.activeBusiness != null) {
+        state = state.copyWith(
+          user: result.user,
+          activeBusiness: result.activeBusiness,
+          isLoading: false,
+          isOnboarding: false,
+        );
+        await _fetchMembershipAndRole(
+          result.user!.id,
+          result.activeBusiness!.id!,
+        );
+      }
     } else {
       state = state.copyWith(isLoading: false, error: result.message);
     }
   }
 
-  Future<void> signUp(String name, String email, String password) async {
+  Future<void> signUp(final String name, final String email, final String password) async {
     state = state.copyWith(isLoading: true, error: null);
 
     final result = await AuthService.signUpWithEmailAndPassword(
@@ -135,19 +234,11 @@ class AuthNotifier extends StateNotifier<AuthState> {
     );
 
     if (result.success && result.user != null) {
-      state = state.copyWith(user: result.user, isLoading: false);
-    } else {
-      state = state.copyWith(isLoading: false, error: result.message);
-    }
-  }
-
-  Future<void> signOut() async {
-    state = state.copyWith(isLoading: true, error: null);
-
-    final result = await AuthService.signOut();
-
-    if (result.success) {
-      state = const AuthState();
+      state = state.copyWith(
+        user: result.user,
+        isLoading: false,
+        isOnboarding: true, // New users always need onboarding
+      );
     } else {
       state = state.copyWith(isLoading: false, error: result.message);
     }
@@ -159,16 +250,45 @@ class AuthNotifier extends StateNotifier<AuthState> {
     final result = await AuthService.signInWithGoogle();
 
     if (result.success && result.user != null) {
-      state = state.copyWith(user: result.user, isLoading: false);
+      if (!result.user!.onboardingCompleted ||
+          result.user!.businessIds.isEmpty) {
+        state = state.copyWith(
+          user: result.user,
+          isLoading: false,
+          isOnboarding: true,
+        );
+      } else if (result.activeBusiness != null) {
+        state = state.copyWith(
+          user: result.user,
+          activeBusiness: result.activeBusiness,
+          isLoading: false,
+          isOnboarding: false,
+        );
+        await _fetchMembershipAndRole(
+          result.user!.id,
+          result.activeBusiness!.id!,
+        );
+      } else {
+        // User has businesses but none is active (e.g., first login after onboarding)
+        state = state.copyWith(
+          user: result.user,
+          isLoading: false,
+          isOnboarding: false,
+        );
+        if (result.user!.businessIds.isNotEmpty) {
+          // Auto-select the first business
+          await switchBusiness(result.user!.businessIds.first);
+        }
+      }
     } else {
       state = state.copyWith(isLoading: false, error: result.message);
     }
   }
 
-  Future<void> resetPassword(String email) async {
+  Future<void> resetPassword(final String email) async {
     state = state.copyWith(isLoading: true, error: null);
 
-    final result = await AuthService.resetPassword(email: email);
+    final result = await AuthService.sendPasswordResetEmail(email);
 
     if (result.success) {
       state = state.copyWith(isLoading: false);
@@ -177,20 +297,25 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
-  Future<void> updateUser(UserModel user) async {
+  Future<void> signOut() async {
     state = state.copyWith(isLoading: true, error: null);
-
-    final result = await AuthService.updateUserProfile(
-      // TODO: Add role and businessId and fix the name issue
-      name: user.name ?? '',
-      photoUrl: user.photoUrl,
-    );
-
-    if (result.success && result.user != null) {
-      state = state.copyWith(user: result.user, isLoading: false);
+    final result = await AuthService.signOut();
+    if (result.success) {
+      state = const AuthState();
     } else {
       state = state.copyWith(isLoading: false, error: result.message);
     }
+  }
+
+  Future<void> completeOnboarding() async {
+    // This is called when the BusinessService.createBusinessWithOnboarding finishes
+    // We just need to refresh our state
+    await _checkAuthStatus();
+  }
+
+  Future<void> setInitialOnboardingDone() async {
+    await AuthService.setOnboardingCompleted();
+    state = state.copyWith(isInitialOnboardingDone: true);
   }
 
   Future<void> switchBusiness(final String businessId) async {
@@ -199,7 +324,11 @@ class AuthNotifier extends StateNotifier<AuthState> {
       final business = await AuthService.getBusinessFromFirestore(businessId);
       if (business != null) {
         await AuthService.saveBusinessToLocalStorage(business);
-        state = state.copyWith(activeBusiness: business, isLoading: false);
+        state = state.copyWith(activeBusiness: business, isOnboarding: false);
+        if (state.user != null) {
+          await _fetchMembershipAndRole(state.user!.id, businessId);
+        }
+        state = state.copyWith(isLoading: false);
       } else {
         state = state.copyWith(isLoading: false, error: 'Business not found');
       }
@@ -207,41 +336,29 @@ class AuthNotifier extends StateNotifier<AuthState> {
       state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
-
-  Future<void> updateBusinessSettings(Map<String, dynamic> newSettings) async {
-    final business = state.activeBusiness;
-    if (business == null) return;
-
-    final updatedBusiness = business.copyWith(
-      settings: {...?business.settings, ...newSettings},
-    );
-
-    try {
-      await AuthService.saveBusinessToFirestore(updatedBusiness);
-      await AuthService.saveBusinessToLocalStorage(updatedBusiness);
-      state = state.copyWith(activeBusiness: updatedBusiness);
-    } catch (e) {
-      state = state.copyWith(error: e.toString());
-    }
-  }
 }
 
 // Providers
-final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
+final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((final ref) {
   return AuthNotifier();
 });
 
-final isAuthenticatedProvider = Provider<bool>((ref) {
+final currentRoleProvider = Provider<RoleModel?>((final ref) {
   final authState = ref.watch(authProvider);
-  return authState.user != null;
+  return authState.currentRole;
 });
 
-final currentBusinessProvider = Provider<BusinessModel?>((ref) {
+final currentMembershipProvider = Provider<MembershipModel?>((final ref) {
+  final authState = ref.watch(authProvider);
+  return authState.currentMembership;
+});
+
+final currentBusinessProvider = Provider<BusinessModel?>((final ref) {
   final authState = ref.watch(authProvider);
   return authState.activeBusiness;
 });
 
-final currentUserProvider = Provider<UserModel?>((ref) {
+final currentUserProvider = Provider<UserModel?>((final ref) {
   final authState = ref.watch(authProvider);
   return authState.user;
 });

@@ -15,6 +15,7 @@ import '../../features/inventory/data/models/location_model.dart';
 import '../../features/inventory/data/models/supplier_model.dart';
 import '../../features/inventory/data/models/stock_in_model.dart';
 import '../../features/pos/data/models/sale_model.dart';
+import '../../features/pos/data/models/customer_model.dart';
 import '../../features/pos/data/models/customer_payment_model.dart';
 import '../../features/dashboard/data/models/expense_model.dart';
 import '../../features/dashboard/data/models/invitation_model.dart';
@@ -27,7 +28,7 @@ part 'sync_service.g.dart';
 SyncService syncService(final SyncServiceRef ref) {
   final isar = ref.watch(isarDatabaseProvider).value;
   if (isar == null) throw Exception('Isar not initialized');
-  final offlineMode = ref.watch(appSettingsNotifierProvider.select((s) => s.offlineModeEnabled));
+  final offlineMode = ref.watch(appSettingsNotifierProvider.select((final s) => s.offlineModeEnabled));
   final service = SyncService(isar, offlineMode);
   service.init();
   return service;
@@ -44,8 +45,8 @@ class SyncService {
 
   void init() {
     startSyncTimer();
-    _connectivitySubscription = Connectivity().onConnectivityChanged.listen((results) {
-      if (!_offlineMode && results.any((r) => r != ConnectivityResult.none)) {
+    _connectivitySubscription = Connectivity().onConnectivityChanged.listen((final results) {
+      if (!_offlineMode && results.any((final r) => r != ConnectivityResult.none)) {
         pushPendingChanges();
       }
     });
@@ -123,21 +124,23 @@ class SyncService {
     required final String businessId,
     required final String collectionPath,
     required final List<T> Function(List<Map<String, dynamic>> jsons) fromJsons,
-    Map<String, dynamic>? where,
+    final Map<String, dynamic>? where,
   }) async {
     debugPrint('DEBUG: SyncService.pull initiated for $collectionPath');
     try {
       Query<Map<String, dynamic>> query = FirebaseConfig.firestore.collection(collectionPath);
       if (where != null) {
-        where.forEach((key, value) => query = query.where(key, isEqualTo: value));
+        where.forEach((final key, final value) => query = query.where(key, isEqualTo: value));
       }
 
       final snapshot = await query.get();
       debugPrint('DEBUG: Firestore snapshot for $collectionPath contains ${snapshot.docs.length} docs');
       
-      final items = fromJsons(snapshot.docs.map((d) {
+      final items = fromJsons(snapshot.docs.map((final d) {
         final data = d.data();
         if (!data.containsKey('id')) data['id'] = d.id;
+        // Inject businessId if missing (often missing in subcollection docs)
+        if (!data.containsKey('businessId')) data['businessId'] = businessId;
         return data;
       }).toList());
 
@@ -164,6 +167,17 @@ class SyncService {
             );
             await _isar.localLocations.put(local);
           }
+        } else if (T == CustomerModel) {
+          for (final item in items as List<CustomerModel>) {
+            final local = LocalCustomer(
+              id: item.id,
+              businessId: item.businessId,
+              name: item.name,
+              phone: item.phone,
+              data: jsonEncode(item.toJson()),
+            );
+            await _isar.localCustomers.put(local);
+          }
         } else if (T == TransactionModel) {
           await _isar.transactionModels.putAll(items as List<TransactionModel>);
         } else if (T == ExpenseModel) {
@@ -174,6 +188,17 @@ class SyncService {
           await _isar.stockInModels.putAll(items as List<StockInModel>);
         } else if (T == CustomerPaymentModel) {
           await _isar.customerPaymentModels.putAll(items as List<CustomerPaymentModel>);
+        } else if (T == SaleModel) {
+          for (final item in items as List<SaleModel>) {
+            final local = LocalSale(
+              id: item.id,
+              businessId: item.businessId,
+              timestamp: item.timestamp,
+              total: item.total,
+              data: jsonEncode(item.toJson()),
+            );
+            await _isar.localSales.put(local);
+          }
         }
       });
     } catch (e) {

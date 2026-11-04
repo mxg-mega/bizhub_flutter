@@ -11,7 +11,7 @@ class BusinessSwitcher extends ConsumerWidget {
     final user = authState.user;
     final activeBusiness = authState.activeBusiness;
 
-    if (user == null || user.businessIds == null || user.businessIds!.isEmpty) {
+    if (user == null || user.businessIds.isEmpty) {
       return Text(activeBusiness?.name ?? 'No Business');
     }
 
@@ -33,8 +33,7 @@ class BusinessSwitcher extends ConsumerWidget {
         ],
       ),
       itemBuilder: (final context) {
-        return user.businessIds!.map((final b) {
-          final id = b.keys.first;
+        return user.businessIds.map((final id) {
           final isSelected = id == activeBusiness?.id;
           return PopupMenuItem<String>(
             value: id,

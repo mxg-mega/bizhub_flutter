@@ -18,6 +18,22 @@ Stream<List<ProductModel>> productList(final ProductListRef ref) {
 }
 
 @riverpod
+Future<List<String>> categories(final CategoriesRef ref) async {
+  final products = await ref.watch(productListProvider.future);
+  final categories = products
+      .map((final p) => p.category ?? 'Uncategorized')
+      .toSet()
+      .toList();
+  categories.sort();
+  // Move 'Uncategorized' to end if exists
+  if (categories.contains('Uncategorized')) {
+    categories.remove('Uncategorized');
+    categories.add('Uncategorized');
+  }
+  return ['All', ...categories];
+}
+
+@riverpod
 Stream<List<LocationModel>> locations(final LocationsRef ref) {
   final businessId = ref.watch(currentBusinessProvider)?.id;
   if (businessId == null) return Stream.value([]);
@@ -40,7 +56,7 @@ class InventoryActions extends _$InventoryActions {
   }) async {
     final authState = ref.read(authProvider);
     final businessId = authState.activeBusiness?.id;
-    final userId = authState.user?.uid ?? 'unknown';
+    final userId = authState.user?.id ?? 'unknown';
     
     if (businessId == null) {
       state = AsyncValue.error('No active business found', StackTrace.current);
@@ -90,7 +106,7 @@ class InventoryActions extends _$InventoryActions {
   }) async {
     final authState = ref.read(authProvider);
     final businessId = authState.activeBusiness?.id;
-    final userId = authState.user?.uid ?? 'unknown';
+    final userId = authState.user?.id ?? 'unknown';
     
     if (businessId == null) {
       state = AsyncValue.error('No active business found', StackTrace.current);
@@ -120,7 +136,7 @@ class InventoryActions extends _$InventoryActions {
   }) async {
     final authState = ref.read(authProvider);
     final businessId = authState.activeBusiness?.id;
-    final userId = authState.user?.uid ?? 'unknown';
+    final userId = authState.user?.id ?? 'unknown';
 
     if (businessId == null) {
       state = AsyncValue.error('No active business found', StackTrace.current);

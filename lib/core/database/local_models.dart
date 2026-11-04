@@ -28,7 +28,7 @@ class LocalProduct {
     required this.data,
   });
 
-  int _fastHash(String string) {
+  int _fastHash(final String string) {
     var hash = 0xcbf29ce484222325;
     var i = 0;
     while (i < string.length) {
@@ -58,7 +58,7 @@ class LocalLocation {
     required this.data,
   });
 
-  int _fastHash(String string) {
+  int _fastHash(final String string) {
     var hash = 0xcbf29ce484222325;
     var i = 0;
     while (i < string.length) {
@@ -94,7 +94,7 @@ class LocalSale {
     required this.data,
   });
 
-  int _fastHash(String string) {
+  int _fastHash(final String string) {
     var hash = 0xcbf29ce484222325;
     var i = 0;
     while (i < string.length) {
@@ -132,7 +132,7 @@ class LocalCustomer {
     required this.data,
   });
 
-  int _fastHash(String string) {
+  int _fastHash(final String string) {
     var hash = 0xcbf29ce484222325;
     var i = 0;
     while (i < string.length) {

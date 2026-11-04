@@ -1,142 +1,110 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../../../../core/config/app_config.dart';
+import '../../../../shared/presentation/widgets/common_app_bar.dart';
+import '../../../../shared/providers/modules_provider.dart';
+import '../../../../shared/models/module_model.dart';
+import '../../../../core/constants/module_configs.dart';
 
-class ModulesPage extends StatelessWidget {
+
+class ModulesPage extends ConsumerWidget {
   const ModulesPage({super.key});
 
-  // TODO: implement a state management solution to manage the module states and settings
-  // this page will allow users to enable or disable modules, and to configure their settings if needed. It will also show the dependencies between modules, and ensure that the required modules are enabled before allowing users to enable dependent modules. The module states and settings should be persisted so that they are retained across app sessions, and they should be easily accessible throughout the app to conditionally show or hide features based on the enabled modules.
-  // for now we only have this page and only hard implemented the UI, but in the future we will need to implement the logic to manage the module states and settings, and to integrate it with the rest of the app to conditionally show or hide features based on the enabled modules.
-
   @override
-  Widget build(final BuildContext context) => Scaffold(
-      appBar: AppBar(
-        title: Text(
-          'Modules',
-          style: GoogleFonts.inter(fontWeight: FontWeight.w600),
-        ),
-        backgroundColor: AppConfig.primaryColor,
-        foregroundColor: Colors.white,
-        elevation: 0,
-      ),
-      body: Padding(
+  Widget build(final BuildContext context, final WidgetRef ref) {
+    final enabledModules = ref.watch(modulesNotifierProvider);
+    const allModules = ModuleConfigs.allModules;
+
+    return Scaffold(
+      appBar: const CommonAppBar(title: 'Module Manager'),
+      body: GridView.builder(
         padding: EdgeInsets.all(16.w),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Available Modules',
-              style: GoogleFonts.inter(
-                fontSize: 24.sp,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            SizedBox(height: 8.h),
-            Text(
-              'Enable or disable features as needed',
-              style: GoogleFonts.inter(
-                fontSize: 16.sp,
-                color: Colors.grey[600],
-              ),
-            ),
-            SizedBox(height: 24.h),
-            Expanded(
-              child: ListView.builder(
-                itemCount: AppConfig.availableModules.length,
-                itemBuilder: (final context, final index) {
-                  final module = AppConfig.availableModules[index];
-                  return _ModuleCard(
-                    title: module.toUpperCase(),
-                    subtitle: 'Manage your $module',
-                    icon: _getModuleIcon(module),
-                    isEnabled: true, // TODO: Get from state
-                    onToggle: (final value) {
-                      // TODO: Toggle module
-                    },
-                  );
-                },
-              ),
-            ),
-          ],
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          crossAxisSpacing: 16.w,
+          mainAxisSpacing: 16.h,
+          childAspectRatio: 0.85,
         ),
+        itemCount: allModules.length,
+        itemBuilder: (final context, final index) {
+          final module = allModules[index];
+          final isEnabled = enabledModules.contains(module.id);
+          return _ModuleCard(
+            module: module,
+            isEnabled: isEnabled,
+            onToggle: () => ref.read(modulesNotifierProvider.notifier).toggleModule(module.id),
+          );
+        },
       ),
     );
-
-  IconData _getModuleIcon(final String module) {
-    switch (module) {
-      case 'inventory':
-        return Icons.inventory;
-      case 'sales':
-        return Icons.point_of_sale;
-      case 'customers':
-        return Icons.people;
-      case 'employees':
-        return Icons.badge;
-      case 'finance':
-        return Icons.account_balance_wallet;
-      case 'reports':
-        return Icons.assessment;
-      case 'settings':
-        return Icons.settings;
-      default:
-        return Icons.apps;
-    }
   }
 }
 
 class _ModuleCard extends StatelessWidget {
-  final String title;
-  final String subtitle;
-  final IconData icon;
+  final ModuleModel module;
   final bool isEnabled;
-  final ValueChanged<bool> onToggle;
+  final VoidCallback onToggle;
 
   const _ModuleCard({
-    required this.title,
-    required this.subtitle,
-    required this.icon,
+    required this.module,
     required this.isEnabled,
     required this.onToggle,
   });
 
+  IconData _getIcon(final String iconName) {
+    switch (iconName) {
+      case 'inventory_2': return Icons.inventory_2;
+      case 'point_of_sale': return Icons.point_of_sale;
+      case 'dashboard': return Icons.dashboard;
+      case 'analytics': return Icons.analytics;
+      case 'money_off': return Icons.money_off;
+      case 'people': return Icons.people;
+      case 'payments': return Icons.payments;
+      case 'receipt': return Icons.receipt_long;
+      default: return Icons.extension;
+    }
+  }
+
   @override
-  Widget build(final BuildContext context) => Card(
-      margin: EdgeInsets.only(bottom: 12.h),
-      child: ListTile(
-        leading: Container(
-          width: 48.w,
-          height: 48.w,
-          decoration: BoxDecoration(
-            color: isEnabled ? AppConfig.primaryColor : Colors.grey[300],
-            borderRadius: BorderRadius.circular(12.r),
+  Widget build(final BuildContext context) {
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16.r),
+        side: BorderSide(color: isEnabled ? Colors.blue : Colors.grey[200]!, width: 2),
+      ),
+      color: isEnabled ? Colors.blue[50] : Colors.white,
+      child: InkWell(
+        onTap: onToggle,
+        borderRadius: BorderRadius.circular(16.r),
+        child: Padding(
+          padding: EdgeInsets.all(16.w),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(_getIcon(module.icon), size: 40.r, color: isEnabled ? Colors.blue : Colors.grey),
+              SizedBox(height: 12.h),
+              Text(
+                module.name,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.inter(
+                  fontSize: 14.sp,
+                  fontWeight: FontWeight.bold,
+                  color: isEnabled ? Colors.blue[900] : Colors.grey[800],
+                ),
+              ),
+              SizedBox(height: 12.h),
+              Switch.adaptive(
+                value: isEnabled,
+                onChanged: (_) => onToggle(),
+                activeColor: Colors.blue,
+              ),
+            ],
           ),
-          child: Icon(
-            icon,
-            color: isEnabled ? Colors.white : Colors.grey[600],
-            size: 24.w,
-          ),
-        ),
-        title: Text(
-          title,
-          style: GoogleFonts.inter(
-            fontWeight: FontWeight.w600,
-            color: isEnabled ? Colors.black87 : Colors.grey[600],
-          ),
-        ),
-        subtitle: Text(
-          subtitle,
-          style: GoogleFonts.inter(
-            color: isEnabled ? Colors.grey[600] : Colors.grey[400],
-          ),
-        ),
-        trailing: Switch(
-          value: isEnabled,
-          onChanged: onToggle,
-          activeColor: AppConfig.primaryColor,
         ),
       ),
     );
+  }
 }

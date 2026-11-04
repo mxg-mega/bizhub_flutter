@@ -50,14 +50,6 @@ class _InventoryAdjustmentFormState extends ConsumerState<InventoryAdjustmentFor
     if (widget.product.unitChain == null) return offsetInSelectedUnit;
     
     final baseUnit = widget.product.unitChain!.baseUnit ?? 'Piece';
-    /// Calculates the conversion factor between the selected unit and the base unit.
-    /// 
-    /// Uses the product's unit chain to determine the multiplicative factor needed
-    /// to convert quantities from [_selectedUnit] to [baseUnit]. This factor is
-    /// essential for accurate inventory adjustments when units differ from the
-    /// base unit of measurement.
-    /// 
-    /// Returns the conversion factor as a double value.
     final factor = widget.product.unitChain!.getFactor(_selectedUnit, baseUnit);
     return offsetInSelectedUnit * factor;
   }
@@ -94,89 +86,104 @@ class _InventoryAdjustmentFormState extends ConsumerState<InventoryAdjustmentFor
   Widget build(final BuildContext context) {
     final locationsAsync = ref.watch(locationsProvider);
     final actionsState = ref.watch(inventoryActionsProvider);
-    final theme = Theme.of(context);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Inventory Adjustment',
-          style: GoogleFonts.inter(fontSize: 18.sp, fontWeight: FontWeight.bold),
-        ),
-        SizedBox(height: 4.h),
-        Text(
-          'Product: ${widget.product.name}',
-          style: theme.textTheme.bodySmall,
-        ),
-        const Divider(height: 32),
-        
-        // Unit Selector
-        EnhancedUnitSelector(
-          product: widget.product,
-          selectedUnit: _selectedUnit,
-          label: 'Adjustment Unit',
-          onUnitSelected: (final unit) => setState(() => _selectedUnit = unit),
-        ),
-        
-        SizedBox(height: 24.h),
-        
-        Text(
-          'Location Stock Levels',
-          style: GoogleFonts.inter(fontSize: 14.sp, fontWeight: FontWeight.w600),
-        ),
-        SizedBox(height: 12.h),
-        
-        locationsAsync.when(
-          data: (locations) => _buildLocationList(locations),
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (err, stack) => Text('Error loading locations: $err'),
-        ),
-        
-        const Divider(height: 40),
-        
-        // Reason Field
-        TextField(
-          controller: _reasonController,
-          decoration: InputDecoration(
-            labelText: 'Reason for Adjustment',
-            hintText: 'e.g., Damaged goods, Restock, etc.',
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.r)),
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24.r),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: EdgeInsets.all(8.w),
+                decoration: BoxDecoration(color: Colors.orange[50], borderRadius: BorderRadius.circular(8.r)),
+                child: Icon(Icons.sync_alt, color: Colors.orange[700], size: 20.sp),
+              ),
+              SizedBox(width: 12.w),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Inventory Adjustment', style: GoogleFonts.inter(fontSize: 16.sp, fontWeight: FontWeight.bold)),
+                  Text(widget.product.name, style: GoogleFonts.inter(fontSize: 12.sp, color: Colors.grey[600])),
+                ],
+              ),
+            ],
           ),
-        ),
-        
-        SizedBox(height: 24.h),
-        
-        if (actionsState.hasError) ...[
-          Text(
-            actionsState.error.toString(),
-            style: const TextStyle(color: Colors.red),
+          SizedBox(height: 24.h),
+          
+          EnhancedUnitSelector(
+            product: widget.product,
+            selectedUnit: _selectedUnit,
+            label: 'Adjustment Unit',
+            onUnitSelected: (final unit) => setState(() => _selectedUnit = unit),
           ),
+          
+          SizedBox(height: 20.h),
+          
+          Text('Location Stock Levels', style: GoogleFonts.inter(fontSize: 13.sp, fontWeight: FontWeight.w600, color: Colors.grey[700])),
           SizedBox(height: 12.h),
-        ],
-        
-        SizedBox(
-          width: double.infinity,
-          height: 50.h,
-          child: ElevatedButton(
-            onPressed: actionsState.isLoading ? null : _submit,
-            child: actionsState.isLoading 
-              ? const CircularProgressIndicator(color: Colors.white)
-              : const Text('Save Adjustments'),
+          
+          locationsAsync.when(
+            data: (final locations) => _buildLocationList(locations),
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (final err, _) => const Text('Error loading locations'),
           ),
-        ),
-      ],
+          
+          SizedBox(height: 20.h),
+          
+          _buildTextField(
+            controller: _reasonController,
+            label: 'Adjustment Reason',
+            hint: 'e.g., Damaged goods, Stock audit...',
+            icon: Icons.notes,
+          ),
+          
+          SizedBox(height: 24.h),
+          
+          if (actionsState.hasError) ...[
+            Container(
+              padding: EdgeInsets.all(12.w),
+              decoration: BoxDecoration(color: Colors.red[50], borderRadius: BorderRadius.circular(12.r)),
+              child: Text(actionsState.error.toString(), style: GoogleFonts.inter(color: Colors.red[700], fontSize: 12.sp)),
+            ),
+            SizedBox(height: 16.h),
+          ],
+          
+          SizedBox(
+            width: double.infinity,
+            height: 54.h,
+            child: ElevatedButton(
+              onPressed: actionsState.isLoading ? null : _submit,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.black87,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
+                elevation: 0,
+              ),
+              child: actionsState.isLoading 
+                ? SizedBox(height: 20.h, width: 20.h, child: const CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                : Text('Confirm Adjustment', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 15.sp)),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
-  Widget _buildLocationList(final List<LocationModel> locations) => ListView.builder(
+  Widget _buildLocationList(final List<LocationModel> locations) {
+    return ListView.separated(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       itemCount: locations.length,
-      itemBuilder: (context, index) {
+      separatorBuilder: (_, final __) => SizedBox(height: 12.h),
+      itemBuilder: (final context, final index) {
         final location = locations[index];
         final currentQty = widget.product.stockByLocation[location.id] ?? 0.0;
         
-        // Convert current quantity from base unit to selected unit for display
         double displayQty = currentQty;
         if (widget.product.unitChain != null) {
           final baseUnit = widget.product.unitChain!.baseUnit ?? 'Piece';
@@ -184,8 +191,15 @@ class _InventoryAdjustmentFormState extends ConsumerState<InventoryAdjustmentFor
           displayQty = currentQty * factor;
         }
 
-        return Padding(
-          padding: EdgeInsets.only(bottom: 16.h),
+        final offsetValue = double.tryParse(_getController(location.id).text) ?? 0.0;
+        final newQty = displayQty + offsetValue;
+
+        return Container(
+          padding: EdgeInsets.all(12.w),
+          decoration: BoxDecoration(
+            color: Colors.grey[50],
+            borderRadius: BorderRadius.circular(16.r),
+          ),
           child: Row(
             children: [
               Expanded(
@@ -193,44 +207,41 @@ class _InventoryAdjustmentFormState extends ConsumerState<InventoryAdjustmentFor
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      location.name,
-                      style: GoogleFonts.inter(fontSize: 14.sp, fontWeight: FontWeight.w500),
-                    ),
-                    Text(
-                      'Current: ${displayQty.toStringAsFixed(2)} $_selectedUnit',
-                      style: TextStyle(fontSize: 12.sp, color: Colors.grey[600]),
-                    ),
+                    Text(location.name, style: GoogleFonts.inter(fontSize: 13.sp, fontWeight: FontWeight.bold)),
+                    Text('Current: ${displayQty.toStringAsFixed(0)}', style: GoogleFonts.inter(fontSize: 11.sp, color: Colors.grey[600])),
                   ],
                 ),
               ),
+              SizedBox(width: 8.w),
               Expanded(
                 child: TextField(
                   controller: _getController(location.id),
-                  keyboardType: TextInputType.numberWithOptions(signed: true),
+                  keyboardType: const TextInputType.numberWithOptions(signed: true),
                   textAlign: TextAlign.center,
+                  style: GoogleFonts.inter(fontSize: 14.sp, fontWeight: FontWeight.bold),
                   decoration: InputDecoration(
                     contentPadding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 8.h),
-                    hintText: '+/-',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8.r)),
+                    hintText: '0',
+                    filled: true,
+                    fillColor: Colors.white,
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8.r), borderSide: BorderSide(color: Colors.grey[200]!)),
+                    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8.r), borderSide: BorderSide(color: Colors.grey[200]!)),
                   ),
-                  onChanged: (final _) => setState(() {}), // Refresh "New" preview
+                  onChanged: (final _) => setState(() {}),
                 ),
               ),
               SizedBox(width: 12.w),
               Expanded(
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
+                    Text('New', style: GoogleFonts.inter(fontSize: 10.sp, color: Colors.grey)),
                     Text(
-                      'New',
-                      style: TextStyle(fontSize: 10.sp, color: Colors.grey),
-                    ),
-                    Text(
-                      '${(displayQty + (double.tryParse(_getController(location.id).text) ?? 0.0)).toStringAsFixed(2)}',
+                      newQty.toStringAsFixed(0),
                       style: GoogleFonts.inter(
                         fontSize: 14.sp, 
                         fontWeight: FontWeight.bold,
-                        color: Colors.blue[700],
+                        color: offsetValue != 0 ? Colors.blue[700] : Colors.black87,
                       ),
                     ),
                   ],
@@ -241,4 +252,33 @@ class _InventoryAdjustmentFormState extends ConsumerState<InventoryAdjustmentFor
         );
       },
     );
+  }
+
+  Widget _buildTextField({
+    required final TextEditingController controller,
+    required final String label,
+    required final String hint,
+    required final IconData icon,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: GoogleFonts.inter(fontSize: 13.sp, fontWeight: FontWeight.w600, color: Colors.grey[700])),
+        SizedBox(height: 8.h),
+        TextField(
+          controller: controller,
+          style: GoogleFonts.inter(fontSize: 14.sp),
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: GoogleFonts.inter(color: Colors.grey[400], fontSize: 13.sp),
+            prefixIcon: Icon(icon, size: 18.sp, color: Colors.blue[700]),
+            filled: true,
+            fillColor: Colors.grey[50],
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.r), borderSide: BorderSide.none),
+            contentPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+          ),
+        ),
+      ],
+    );
+  }
 }

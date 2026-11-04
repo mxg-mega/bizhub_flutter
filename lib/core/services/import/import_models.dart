@@ -14,8 +14,8 @@ class ImportMapping {
   });
 
   ImportMapping copyWith({
-    String? systemField,
-    bool? isIgnored,
+    final String? systemField,
+    final bool? isIgnored,
   }) {
     return ImportMapping(
       userHeader: userHeader,
@@ -52,13 +52,13 @@ class ImportWizardState {
   });
 
   ImportWizardState copyWith({
-    ImportStep? step,
-    List<String>? headers,
-    List<List<dynamic>>? rawData,
-    List<ImportMapping>? mappings,
-    List<ImportPreviewRow>? previewData,
-    double? progress,
-    String? errorMessage,
+    final ImportStep? step,
+    final List<String>? headers,
+    final List<List<dynamic>>? rawData,
+    final List<ImportMapping>? mappings,
+    final List<ImportPreviewRow>? previewData,
+    final double? progress,
+    final String? errorMessage,
   }) {
     return ImportWizardState(
       step: step ?? this.step,

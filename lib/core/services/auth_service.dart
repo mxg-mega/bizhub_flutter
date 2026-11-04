@@ -40,21 +40,16 @@ class AuthService {
       if (userCredential.user != null) {
         final userModel = await getUserFromFirestore(userCredential.user!.uid);
         debugPrint('userModel: ${userModel?.toJson()}');
-        final businessModel = await getBusinessFromFirestore(
-          userModel?.businessIds!.first.keys.first ?? '',
-        );
-        debugPrint('Business info Model : ${businessModel?.toJson()}');
-        if (userModel != null && businessModel != null) {
+
+        BusinessModel? businessModel;
+        if (userModel != null && userModel.businessIds.isNotEmpty) {
+          businessModel = await getBusinessFromFirestore(userModel.businessIds.first);
+        }
+
+        if (userModel != null) {
           await saveUserToLocalStorage(userModel);
-          debugPrint('saveUserToLocalStorage: $userModel');
-          try {
-            debugPrint(
-              '====================Trying to save to local storage===============',
-            );
+          if (businessModel != null) {
             await saveBusinessToLocalStorage(businessModel);
-            debugPrint('saveBusinessToLoacalStorage: $businessModel');
-          } catch (e) {
-            debugPrint(e.toString());
           }
 
           return AuthResult.success(
@@ -63,13 +58,13 @@ class AuthService {
             message: 'Sign in successful',
           );
         } else {
-          debugPrint('User data not found. Please contact support.');
           return AuthResult.failure(
             message: 'User data not found. Please contact support.',
             errorCode: 'USER_DATA_NOT_FOUND',
           );
         }
-      } else {
+      }
+ else {
         return AuthResult.failure(
           message: 'Sign in failed. Please try again.',
           errorCode: 'SIGN_IN_FAILED',
@@ -90,9 +85,9 @@ class AuthService {
 
   // Sign up with email and password
   static Future<AuthResult> signUpWithEmailAndPassword({
-    required String name,
-    required String email,
-    required String password,
+    required final String name,
+    required final String email,
+    required final String password,
   }) async {
     try {
       final UserCredential userCredential = await _auth
@@ -104,31 +99,26 @@ class AuthService {
 
         // Create user document in Firestore
         final userModel = UserModel(
-          uid: userCredential.user!.uid,
+          id: userCredential.user!.uid,
           email: email,
           name: name,
           photoUrl: userCredential.user!.photoURL,
-          role: 'owner', // Default role for new users
           businessIds: [], // Will be set when they create a business
-          enabledModules: [],
+          isSuperAdmin: false,
+          onboardingCompleted: false,
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
         );
 
-        // TODO: refactor firebase user saving to include membership creation, and setting default values
-        //        saving them to proper paths based on live schema
         await saveUserToFirestore(userModel);
         await saveUserToLocalStorage(userModel);
 
-        // TODO: implement business data creation and saving to proper paths based on the Llive MVP schema
-        // TODO: also implement seeding of data and path (sub-collection) initializations
-
         return AuthResult.success(
-          // TODO: implement business Model
           user: userModel,
           message: 'Account created successfully',
         );
-      } else {
+      }
+ else {
         return AuthResult.failure(
           message: 'Sign up failed. Please try again.',
           errorCode: 'SIGN_UP_FAILED',
@@ -184,13 +174,13 @@ class AuthService {
         if (userModel == null) {
           // Create new user if they don't exist
           userModel = UserModel(
-            uid: userCredential.user!.uid,
+            id: userCredential.user!.uid,
             email: userCredential.user!.email ?? '',
             name: userCredential.user!.displayName ?? 'User',
             photoUrl: userCredential.user!.photoURL,
-            role: 'owner',
             businessIds: [],
-            enabledModules: [],
+            isSuperAdmin: false,
+            onboardingCompleted: false,
             createdAt: DateTime.now(),
             updatedAt: DateTime.now(),
           );
@@ -232,7 +222,7 @@ class AuthService {
       await prefs.remove(AppConfig.userDataKey);
       await prefs.remove(AppConfig.businessDataKey);
 
-      return AuthResult(success: true, message: 'Signed out successfully');
+      return const AuthResult(success: true, message: 'Signed out successfully');
     } catch (e) {
       return AuthResult.failure(
         message: 'Sign out failed. Please try again.',
@@ -242,10 +232,10 @@ class AuthService {
   }
 
   // Reset password
-  static Future<AuthResult> resetPassword({required String email}) async {
+  static Future<AuthResult> sendPasswordResetEmail(final String email) async {
     try {
       await _auth.sendPasswordResetEmail(email: email);
-      return AuthResult(success: true, message: 'Password reset email sent');
+      return const AuthResult(success: true, message: 'Password reset email sent');
     } on FirebaseAuthException catch (e) {
       return AuthResult.failure(
         message: _getAuthErrorMessage(e.code),
@@ -261,8 +251,8 @@ class AuthService {
 
   // Update user profile
   static Future<AuthResult> updateUserProfile({
-    required String name,
-    String? photoUrl,
+    required final String name,
+    final String? photoUrl,
   }) async {
     try {
       // TODO: implement an actual update logic according to the Live MVP
@@ -317,22 +307,23 @@ class AuthService {
       debugPrint('doc: ${doc.data()!}');
       debugPrint('doc.data()![\'displayName\']: ${doc.data()!['displayName']}');
       if (doc.exists) {
-        final userModel = UserModel.fromJson(doc.data()!);
+        final data = doc.data()!;
+        final Map<String, dynamic> mappedData = Map<String, dynamic>.from(data);
+        mappedData['id'] = uid;
+        if (data['displayName'] != null) mappedData['name'] = data['displayName'];
+        if (data['photoURL'] != null) mappedData['photoUrl'] = data['photoURL'];
+        
+        final userModel = UserModel.fromJson(mappedData);
         final businessIDsRef = await _firestore
             .collection('users')
             .doc(uid)
             .collection('memberships')
             .get();
-        final List<Map<String, dynamic>> businessIDs = [];
-
-        for (QueryDocumentSnapshot snapshot in businessIDsRef.docs) {
-          debugPrint('Member id: ${snapshot.id}');
-          businessIDs.add({
-            snapshot.id: snapshot.data()! as Map<String, dynamic>,
-          });
-        }
+        final List<String> businessIDs = businessIDsRef.docs.map((final d) => d.id).toList();
+        
         debugPrint('getUserFromFirestore: ${userModel.toJson()}');
         return userModel.copyWith(
+          id: uid, // Use the provided uid as the id
           name: doc.data()!['displayName'] as String?,
           businessIds: businessIDs,
         );
@@ -345,14 +336,38 @@ class AuthService {
   }
 
   // Save user to Firestore
-  static Future<void> saveUserToFirestore(UserModel user) async {
-    await _firestore.collection('users').doc(user.uid).set(user.toJson());
+  static Future<void> saveUserToFirestore(final UserModel user) async {
+    await _firestore.collection('users').doc(user.id).set(user.toJson());
   }
 
   // Save user to local storage
-  static Future<void> saveUserToLocalStorage(UserModel user) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(AppConfig.userDataKey, jsonEncode(user.toJson()));
+  static Future<void> saveUserToLocalStorage(final UserModel user) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(AppConfig.userDataKey, jsonEncode(user.toJson()));
+    } catch (e) {
+      debugPrint('saveUserToLocalStorage error: $e');
+    }
+  }
+
+  // Mark app onboarding as completed
+  static Future<void> setOnboardingCompleted() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(AppConfig.onboardingCompletedKey, true);
+    } catch (e) {
+      debugPrint('setOnboardingCompleted error: $e');
+    }
+  }
+
+  // Check if app onboarding is completed
+  static Future<bool> isOnboardingCompleted() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getBool(AppConfig.onboardingCompletedKey) ?? false;
+    } catch (e) {
+      return false;
+    }
   }
 
   // Get user from local storage
@@ -370,15 +385,16 @@ class AuthService {
   }
 
   // Helper to convert Firestore Timestamps to JSON-encodable strings
-  static dynamic _convertTimestamps(dynamic value) {
+  static dynamic _convertTimestamps(final dynamic value) {
     if (value is Timestamp) {
       return value.toDate().toIso8601String();
     }
     if (value is Map) {
-      return value.map((key, val) => MapEntry(key, _convertTimestamps(val)));
+      return value.map<String, dynamic>(
+          (final key, final val) => MapEntry(key.toString(), _convertTimestamps(val)));
     }
     if (value is List) {
-      return value.map((e) => _convertTimestamps(e)).toList();
+      return value.map((final e) => _convertTimestamps(e)).toList();
     }
     return value;
   }
@@ -406,17 +422,12 @@ class AuthService {
       final modulesDoc = await _firestore
           .collection('businesses')
           .doc(businessId)
-          .collection('modules')
-          .doc('enabled')
+          .collection('settings')
+          .doc('modules')
           .get();
       debugPrint('getBusinessFromFirestore modulesDoc: ${modulesDoc.data()!}');
-      Map<String, dynamic>? modules = modulesDoc.data();
-      if (modules != null) {
-        modules = modules.map(
-          (key, value) => MapEntry(key, _convertTimestamps(value)),
-        );
-      }
-
+      final dynamic modules = modulesDoc.data();
+      
       final infoData = infoDoc.data()!;
       final name = infoData['name'];
       final category = infoData['category'];
@@ -427,7 +438,7 @@ class AuthService {
       if (doc.exists) {
         debugPrint('doc.data()![\'name\']: ${doc.data()!['name']}');
         final data = doc.data()!;
-        final convertedData = data.map(
+        final convertedData = data.map<String, dynamic>(
           (final key, final value) => MapEntry(key, _convertTimestamps(value)),
         );
         final businessModel = BusinessModel.fromJson(convertedData);
@@ -454,7 +465,7 @@ class AuthService {
   }
 
   // Save business to Firestore
-  static Future<void> saveBusinessToFirestore(BusinessModel business) async {
+  static Future<void> saveBusinessToFirestore(final BusinessModel business) async {
     // TODO: Further break down of saving will be done later and also improved later
     await _firestore
         .collection('businesses')
@@ -463,7 +474,7 @@ class AuthService {
   }
 
   // Save business to local storage
-  static Future<void> saveBusinessToLocalStorage(BusinessModel business) async {
+  static Future<void> saveBusinessToLocalStorage(final BusinessModel business) async {
     // TODO: Further break down of saving will be done later and also improved later
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(
@@ -497,7 +508,7 @@ class AuthService {
   }
 
   // Get authentication error message
-  static String _getAuthErrorMessage(String errorCode) {
+  static String _getAuthErrorMessage(final String errorCode) {
     switch (errorCode) {
       case 'user-not-found':
         return 'No user found with this email address.';

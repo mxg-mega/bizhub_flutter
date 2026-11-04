@@ -26,7 +26,7 @@ class _BarcodeScannerWidgetState extends State<BarcodeScannerWidget> {
   }
 
   @override
-  Widget build(BuildContext context) => Scaffold(
+  Widget build(final BuildContext context) => Scaffold(
       appBar: AppBar(
         title: const Text('Scan Barcode'),
         actions: [
@@ -72,7 +72,7 @@ class _BarcodeScannerWidgetState extends State<BarcodeScannerWidget> {
       ),
       body: MobileScanner(
         controller: controller,
-        onDetect: (capture) {
+        onDetect: (final capture) {
           final List<Barcode> barcodes = capture.barcodes;
           for (final barcode in barcodes) {
             if (barcode.rawValue != null) {

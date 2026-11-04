@@ -22,7 +22,7 @@ class FinanceService {
 
   FinanceService(this._isar);
 
-  Future<ProfitLossReport> getProfitLoss(String businessId, DateTime start, DateTime end) async {
+  Future<ProfitLossReport> getProfitLoss(final String businessId, final DateTime start, final DateTime end) async {
     final transactions = await _isar.transactionModels
         .where()
         .filter()
