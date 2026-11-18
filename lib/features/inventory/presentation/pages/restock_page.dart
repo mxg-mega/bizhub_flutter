@@ -170,11 +170,11 @@ class _RestockPageState extends ConsumerState<RestockPage> {
                 return ListTile(
                   contentPadding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 8.h),
                   title: Text(item.name, style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 14.sp)),
-                  subtitle: Text('${item.quantity.toStringAsFixed(0)} ${item.unit} @ \$${item.costPrice.toStringAsFixed(2)}', style: GoogleFonts.inter(fontSize: 12.sp, color: Colors.grey[600])),
+                  subtitle: Text('${item.quantity.toStringAsFixed(0)} ${item.unit} @ ₦${item.costPrice.toStringAsFixed(2)}', style: GoogleFonts.inter(fontSize: 12.sp, color: Colors.grey[600])),
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text('\$${(item.quantity * item.costPrice).toStringAsFixed(2)}', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 14.sp)),
+                      Text('₦${(item.quantity * item.costPrice).toStringAsFixed(2)}', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 14.sp)),
                       SizedBox(width: 8.w),
                       IconButton(
                         icon: const Icon(Icons.remove_circle_outline, color: Colors.redAccent, size: 20),
@@ -193,7 +193,7 @@ class _RestockPageState extends ConsumerState<RestockPage> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text('Total Cost', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 14.sp, color: Colors.blue[900])),
-                  Text('\$${_items.fold(0.0, (final sum, final i) => sum + (i.quantity * i.costPrice)).toStringAsFixed(2)}', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 18.sp, color: Colors.blue[900])),
+                  Text('₦${_items.fold(0.0, (final sum, final i) => sum + (i.quantity * i.costPrice)).toStringAsFixed(2)}', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 18.sp, color: Colors.blue[900])),
                 ],
               ),
             ),
@@ -234,7 +234,7 @@ class _RestockPageState extends ConsumerState<RestockPage> {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
           elevation: 0,
         ),
-        child: Text('Complete Purchase • \$${totalCost.toStringAsFixed(2)}', style: GoogleFonts.inter(fontSize: 16.sp, fontWeight: FontWeight.bold)),
+        child: Text('Complete Purchase • ₦${totalCost.toStringAsFixed(2)}', style: GoogleFonts.inter(fontSize: 16.sp, fontWeight: FontWeight.bold)),
       ),
     );
   }
@@ -277,7 +277,7 @@ class _RestockPageState extends ConsumerState<RestockPage> {
               SizedBox(height: 16.h),
               TextField(
                 controller: costController, 
-                decoration: InputDecoration(labelText: 'Cost Price per Unit', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.r)), prefixText: r'$ '), 
+                decoration: InputDecoration(labelText: 'Cost Price per Unit', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.r)), prefixText: '₦ '), 
                 keyboardType: TextInputType.number,
               ),
             ],

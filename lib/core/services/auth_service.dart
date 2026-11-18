@@ -43,7 +43,9 @@ class AuthService {
 
         BusinessModel? businessModel;
         if (userModel != null && userModel.businessIds.isNotEmpty) {
-          businessModel = await getBusinessFromFirestore(userModel.businessIds.first);
+          businessModel = await getBusinessFromFirestore(
+            userModel.businessIds.first,
+          );
         }
 
         if (userModel != null) {
@@ -63,8 +65,7 @@ class AuthService {
             errorCode: 'USER_DATA_NOT_FOUND',
           );
         }
-      }
- else {
+      } else {
         return AuthResult.failure(
           message: 'Sign in failed. Please try again.',
           errorCode: 'SIGN_IN_FAILED',
@@ -117,8 +118,7 @@ class AuthService {
           user: userModel,
           message: 'Account created successfully',
         );
-      }
- else {
+      } else {
         return AuthResult.failure(
           message: 'Sign up failed. Please try again.',
           errorCode: 'SIGN_UP_FAILED',
@@ -222,7 +222,10 @@ class AuthService {
       await prefs.remove(AppConfig.userDataKey);
       await prefs.remove(AppConfig.businessDataKey);
 
-      return const AuthResult(success: true, message: 'Signed out successfully');
+      return const AuthResult(
+        success: true,
+        message: 'Signed out successfully',
+      );
     } catch (e) {
       return AuthResult.failure(
         message: 'Sign out failed. Please try again.',
@@ -235,7 +238,10 @@ class AuthService {
   static Future<AuthResult> sendPasswordResetEmail(final String email) async {
     try {
       await _auth.sendPasswordResetEmail(email: email);
-      return const AuthResult(success: true, message: 'Password reset email sent');
+      return const AuthResult(
+        success: true,
+        message: 'Password reset email sent',
+      );
     } on FirebaseAuthException catch (e) {
       return AuthResult.failure(
         message: _getAuthErrorMessage(e.code),
@@ -308,19 +314,27 @@ class AuthService {
       debugPrint('doc.data()![\'displayName\']: ${doc.data()!['displayName']}');
       if (doc.exists) {
         final data = doc.data()!;
-        final Map<String, dynamic> mappedData = Map<String, dynamic>.from(data);
+        final Map<String, dynamic> mappedData = Map<String, dynamic>.from(
+          _convertTimestamps(data) as Map,
+        );
         mappedData['id'] = uid;
-        if (data['displayName'] != null) mappedData['name'] = data['displayName'];
-        if (data['photoURL'] != null) mappedData['photoUrl'] = data['photoURL'];
-        
+        if (data['displayName'] != null) {
+          mappedData['name'] = data['displayName'];
+        }
+        if (data['photoURL'] != null) {
+          mappedData['photoUrl'] = data['photoURL'];
+        }
+
         final userModel = UserModel.fromJson(mappedData);
         final businessIDsRef = await _firestore
             .collection('users')
             .doc(uid)
             .collection('memberships')
             .get();
-        final List<String> businessIDs = businessIDsRef.docs.map((final d) => d.id).toList();
-        
+        final List<String> businessIDs = businessIDsRef.docs
+            .map((final d) => d.id)
+            .toList();
+
         debugPrint('getUserFromFirestore: ${userModel.toJson()}');
         return userModel.copyWith(
           id: uid, // Use the provided uid as the id
@@ -344,7 +358,20 @@ class AuthService {
   static Future<void> saveUserToLocalStorage(final UserModel user) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(AppConfig.userDataKey, jsonEncode(user.toJson()));
+      final sanitized = _convertTimestamps(user.toJson());
+      final jsonString = jsonEncode(
+        sanitized,
+        toEncodable: (final dynamic nonEncodable) {
+          if (nonEncodable is Timestamp) {
+            return nonEncodable.toDate().toIso8601String();
+          }
+          if (nonEncodable is DateTime) {
+            return nonEncodable.toIso8601String();
+          }
+          return nonEncodable.toString();
+        },
+      );
+      await prefs.setString(AppConfig.userDataKey, jsonString);
     } catch (e) {
       debugPrint('saveUserToLocalStorage error: $e');
     }
@@ -391,7 +418,9 @@ class AuthService {
     }
     if (value is Map) {
       return value.map<String, dynamic>(
-          (final key, final val) => MapEntry(key.toString(), _convertTimestamps(val)));
+        (final key, final val) =>
+            MapEntry(key.toString(), _convertTimestamps(val)),
+      );
     }
     if (value is List) {
       return value.map((final e) => _convertTimestamps(e)).toList();
@@ -400,6 +429,19 @@ class AuthService {
   }
 
   // Get business from Firestore
+  static Future<String?> getBusinessNameFromFirestore(
+    final String businessId,
+  ) async {
+    final infoDoc = await _firestore
+        .collection('businesses')
+        .doc(businessId)
+        .collection('settings')
+        .doc('info')
+        .get();
+    final name = infoDoc.data()?['name'];
+    return name is String && name.trim().isNotEmpty ? name.trim() : null;
+  }
+
   static Future<BusinessModel?> getBusinessFromFirestore(
     final String businessId,
   ) async {
@@ -418,17 +460,61 @@ class AuthService {
           .doc('info')
           .get();
       debugPrint('getBusinessFromFirestore infoDoc: ${infoDoc.data()!}');
+      debugPrint('getBusinessFromFirestore Module fetch');
 
-      final modulesDoc = await _firestore
+      DocumentSnapshot<Map<String, dynamic>> modulesDoc = await _firestore
           .collection('businesses')
           .doc(businessId)
-          .collection('settings')
-          .doc('modules')
+          .collection('modules')
+          .doc('enabled')
           .get();
-      debugPrint('getBusinessFromFirestore modulesDoc: ${modulesDoc.data()!}');
-      final dynamic modules = modulesDoc.data();
-      
-      final infoData = infoDoc.data()!;
+
+      if (!modulesDoc.exists) {
+        final legacyDoc = await _firestore
+            .collection('businesses')
+            .doc(businessId)
+            .collection('settings')
+            .doc('modules')
+            .get();
+        if (legacyDoc.exists) {
+          modulesDoc = legacyDoc;
+        } else {
+          debugPrint(
+            'getBusinessFromFirestore modulesDoc does not exist: creating new modulesDoc',
+          );
+          final defaultModules = <String, dynamic>{
+            for (final id in ['dashboard', 'zakat_tracker', 'inventory', 'pos'])
+              id: {
+                'enabled': true,
+                'lastUpdated': FieldValue.serverTimestamp(),
+                'installedAt': FieldValue.serverTimestamp(),
+                'installedBy': 'system',
+                'version': '1.0.0',
+              },
+          };
+          await _firestore
+              .collection('businesses')
+              .doc(businessId)
+              .collection('modules')
+              .doc('enabled')
+              .set(defaultModules);
+
+          modulesDoc = await _firestore
+              .collection('businesses')
+              .doc(businessId)
+              .collection('modules')
+              .doc('enabled')
+              .get();
+        }
+      }
+      debugPrint('getBusinessFromFirestore modulesDoc: ${modulesDoc.data()}');
+      final dynamic rawModules = modulesDoc.data();
+      final dynamic modules = _convertTimestamps(rawModules);
+
+      final dynamic rawInfo = infoDoc.data();
+      final infoData = rawInfo != null
+          ? Map<String, dynamic>.from(_convertTimestamps(rawInfo) as Map)
+          : <String, dynamic>{};
       final name = infoData['name'];
       final category = infoData['category'];
       final address = infoData['address'];
@@ -465,7 +551,9 @@ class AuthService {
   }
 
   // Save business to Firestore
-  static Future<void> saveBusinessToFirestore(final BusinessModel business) async {
+  static Future<void> saveBusinessToFirestore(
+    final BusinessModel business,
+  ) async {
     // TODO: Further break down of saving will be done later and also improved later
     await _firestore
         .collection('businesses')
@@ -474,13 +562,31 @@ class AuthService {
   }
 
   // Save business to local storage
-  static Future<void> saveBusinessToLocalStorage(final BusinessModel business) async {
-    // TODO: Further break down of saving will be done later and also improved later
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(
-      AppConfig.businessDataKey,
-      jsonEncode(business.toJson()),
-    );
+  static Future<void> saveBusinessToLocalStorage(
+    final BusinessModel business,
+  ) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      debugPrint(
+        '[debug] Saving business to local storage: ${business.toJson()}',
+      );
+      final sanitized = _convertTimestamps(business.toJson());
+      final jsonString = jsonEncode(
+        sanitized,
+        toEncodable: (final dynamic nonEncodable) {
+          if (nonEncodable is Timestamp) {
+            return nonEncodable.toDate().toIso8601String();
+          }
+          if (nonEncodable is DateTime) {
+            return nonEncodable.toIso8601String();
+          }
+          return nonEncodable.toString();
+        },
+      );
+      await prefs.setString(AppConfig.businessDataKey, jsonString);
+    } catch (e) {
+      debugPrint('saveBusinessToLocalStorage error: $e');
+    }
   }
 
   static Future<void> switchActiveBusiness(final String businessId) async {
@@ -498,9 +604,12 @@ class AuthService {
     try {
       final prefs = await SharedPreferences.getInstance();
       final businessData = prefs.getString(AppConfig.businessDataKey);
+      debugPrint('[debug] getBusinessFromLocalStorage: $businessData');
       if (businessData != null) {
+        debugPrint('[debug] getBusinessFromLocalStorage: $businessData');
         return BusinessModel.fromJson(jsonDecode(businessData));
       }
+      debugPrint('[debug] getBusinessFromLocalStorage: No business data found');
       return null;
     } catch (e) {
       return null;

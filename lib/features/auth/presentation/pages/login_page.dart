@@ -6,7 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/config/app_config.dart';
 import '../../../../shared/providers/auth_provider.dart';
-import '../../../../shared/widgets/loading_widget.dart';
+// import '../../../../shared/widgets/loading_widget.dart';
 
 class LoginPage extends ConsumerStatefulWidget {
   const LoginPage({super.key});
@@ -69,6 +69,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text(next.error!)));
+        debugPrint('[debug] Login error: ${next.error}');
       }
     });
 

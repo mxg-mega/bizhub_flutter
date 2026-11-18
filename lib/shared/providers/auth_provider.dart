@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -48,7 +49,8 @@ class AuthState {
       currentRole: currentRole ?? this.currentRole,
       isLoading: isLoading ?? this.isLoading,
       isOnboarding: isOnboarding ?? this.isOnboarding,
-      isInitialOnboardingDone: isInitialOnboardingDone ?? this.isInitialOnboardingDone,
+      isInitialOnboardingDone:
+          isInitialOnboardingDone ?? this.isInitialOnboardingDone,
       error: error ?? this.error,
     );
   }
@@ -79,15 +81,27 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
         if (userModel != null) {
           final businessModel = await AuthService.getBusinessFromLocalStorage();
-          
+          debugPrint(
+            '[debug] User and business loaded from local storage: ${userModel.id}, ${businessModel?.toString()}',
+          );
+          if (businessModel == null) {
+            debugPrint(
+              '[debug] No business found in local storage for user: ${userModel.id}',
+            );
+          }
           if (!userModel.onboardingCompleted || userModel.businessIds.isEmpty) {
             state = state.copyWith(
               user: userModel,
-              activeBusiness: businessModel, // Still set it if we have it locally
+              activeBusiness:
+                  businessModel, // Still set it if we have it locally
               isLoading: false,
               isOnboarding: true,
             );
-            if (businessModel != null && userModel.businessIds.contains(businessModel.id)) {
+            debugPrint(
+              '[debug] User onboarding not completed or no businesses: ${userModel.id}',
+            );
+            if (businessModel != null &&
+                userModel.businessIds.contains(businessModel.id)) {
               await _fetchMembershipAndRole(userModel.id, businessModel.id!);
             }
             return;
@@ -156,11 +170,15 @@ class AuthNotifier extends StateNotifier<AuthState> {
       }
       state = state.copyWith(isLoading: false);
     } catch (e) {
+      debugPrint('Error checking auth status: $e');
       state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
 
-  Future<void> _fetchMembershipAndRole(final String userId, final String businessId) async {
+  Future<void> _fetchMembershipAndRole(
+    final String userId,
+    final String businessId,
+  ) async {
     try {
       final membership = await _roleService.getMembership(
         businessId: businessId,
@@ -178,6 +196,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       }
     } catch (e) {
       // Log error but don't break auth state
+      print('[AuthNotifier]: Error fetching membership and role: $e');
     }
   }
 
@@ -224,7 +243,11 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
-  Future<void> signUp(final String name, final String email, final String password) async {
+  Future<void> signUp(
+    final String name,
+    final String email,
+    final String password,
+  ) async {
     state = state.copyWith(isLoading: true, error: null);
 
     final result = await AuthService.signUpWithEmailAndPassword(
@@ -336,10 +359,17 @@ class AuthNotifier extends StateNotifier<AuthState> {
       state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
+
+  Future<void> updateActiveBusiness(final BusinessModel updatedBusiness) async {
+    await AuthService.saveBusinessToLocalStorage(updatedBusiness);
+    state = state.copyWith(activeBusiness: updatedBusiness);
+  }
 }
 
 // Providers
-final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((final ref) {
+final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((
+  final ref,
+) {
   return AuthNotifier();
 });
 

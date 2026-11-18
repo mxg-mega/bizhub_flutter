@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/config/app_config.dart';
 import '../../../../core/services/business_service.dart';
+import '../../../../shared/models/module_state_model.dart';
 import '../../../../shared/providers/auth_provider.dart';
 import '../../../../core/constants/module_configs.dart';
 
@@ -13,10 +14,12 @@ class BusinessOnboardingPage extends ConsumerStatefulWidget {
   const BusinessOnboardingPage({super.key});
 
   @override
-  ConsumerState<BusinessOnboardingPage> createState() => _BusinessOnboardingPageState();
+  ConsumerState<BusinessOnboardingPage> createState() =>
+      _BusinessOnboardingPageState();
 }
 
-class _BusinessOnboardingPageState extends ConsumerState<BusinessOnboardingPage> {
+class _BusinessOnboardingPageState
+    extends ConsumerState<BusinessOnboardingPage> {
   final PageController _pageController = PageController();
   int _currentStep = 0;
   final int _totalSteps = 4;
@@ -48,23 +51,26 @@ class _BusinessOnboardingPageState extends ConsumerState<BusinessOnboardingPage>
         _industry = business.industry ?? 'retail';
         _businessSize = business.size ?? 'small';
         _language = business.language ?? 'en';
-        
+
         if (business.goals.isNotEmpty) {
           _goals.clear();
           _goals.addAll(business.goals);
         }
-        
+
         final modules = business.enabledModules;
         if (modules != null && modules is Map) {
           _selectedModules.clear();
           modules.forEach((final key, final value) {
-            if (value == true || value == 'true') {
+            if (ModuleStateModel.isEnabled(value)) {
               _selectedModules.add(key.toString());
             }
           });
         }
-        
-        _currency = business.settings?['currency'] ?? 'NGN';
+
+        _currency =
+            business.settings?['currency'] ??
+            business.settings?['currencyCode'] ??
+            'NGN';
 
         // Update the current step if we have a business name
         if (_businessName.isNotEmpty) {
@@ -72,7 +78,7 @@ class _BusinessOnboardingPageState extends ConsumerState<BusinessOnboardingPage>
           _currentStep = 1;
         }
       });
-      
+
       // Navigate to the correct page after state update
       if (_currentStep > 0) {
         _pageController.jumpToPage(_currentStep);
@@ -88,7 +94,7 @@ class _BusinessOnboardingPageState extends ConsumerState<BusinessOnboardingPage>
 
   void _nextStep() {
     if (_currentStep == 0 && !_formKey.currentState!.validate()) return;
-    
+
     if (_currentStep < _totalSteps - 1) {
       _pageController.nextPage(
         duration: const Duration(milliseconds: 300),
@@ -127,11 +133,12 @@ class _BusinessOnboardingPageState extends ConsumerState<BusinessOnboardingPage>
       showDialog(
         context: context,
         barrierDismissible: false,
-        builder: (final context) => const Center(child: CircularProgressIndicator()),
+        builder: (final context) =>
+            const Center(child: CircularProgressIndicator()),
       );
 
       final business = ref.read(currentBusinessProvider);
-      
+
       if (business != null && business.id != null) {
         await BusinessService().updateBusinessOnboarding(
           businessId: business.id!,
@@ -170,7 +177,9 @@ class _BusinessOnboardingPageState extends ConsumerState<BusinessOnboardingPage>
         title: LinearProgressIndicator(
           value: (_currentStep + 1) / _totalSteps,
           backgroundColor: Colors.grey[200],
-          valueColor: const AlwaysStoppedAnimation<Color>(AppConfig.primaryColor),
+          valueColor: const AlwaysStoppedAnimation<Color>(
+            AppConfig.primaryColor,
+          ),
         ),
       ),
       body: SafeArea(
@@ -180,7 +189,8 @@ class _BusinessOnboardingPageState extends ConsumerState<BusinessOnboardingPage>
               child: PageView(
                 controller: _pageController,
                 physics: const NeverScrollableScrollPhysics(),
-                onPageChanged: (final index) => setState(() => _currentStep = index),
+                onPageChanged: (final index) =>
+                    setState(() => _currentStep = index),
                 children: [
                   _buildStep1Profile(),
                   _buildStep2Goals(),
@@ -217,7 +227,10 @@ class _BusinessOnboardingPageState extends ConsumerState<BusinessOnboardingPage>
             ],
             Text(
               'Tell us about your business',
-              style: GoogleFonts.poppins(fontSize: 24.sp, fontWeight: FontWeight.bold),
+              style: GoogleFonts.poppins(
+                fontSize: 24.sp,
+                fontWeight: FontWeight.bold,
+              ),
             ),
             SizedBox(height: 8.h),
             Text(
@@ -231,10 +244,81 @@ class _BusinessOnboardingPageState extends ConsumerState<BusinessOnboardingPage>
                 border: OutlineInputBorder(),
               ),
               onChanged: (final val) => _businessName = val,
-              validator: (final val) => (val == null || val.isEmpty) ? 'Required' : null,
+              validator: (final val) =>
+                  (val == null || val.isEmpty) ? 'Required' : null,
+            ),
+            SizedBox(height: 16.h),
+            DropdownButtonFormField<String>(
+              value:
+                  [
+                    'NGN',
+                    'USD',
+                    'EUR',
+                    'GBP',
+                    'KES',
+                    'GHS',
+                    'CAD',
+                    'AUD',
+                    'ZAR',
+                    'INR',
+                    'AED',
+                  ].contains(_currency)
+                  ? _currency
+                  : 'NGN',
+              decoration: const InputDecoration(
+                labelText: 'Operational Currency *',
+                prefixIcon: Icon(Icons.currency_exchange),
+                border: OutlineInputBorder(),
+              ),
+              items: const [
+                DropdownMenuItem(
+                  value: 'NGN',
+                  child: Text('NGN (₦) - Nigerian Naira'),
+                ),
+                DropdownMenuItem(
+                  value: 'USD',
+                  child: Text('USD (\$) - US Dollar'),
+                ),
+                DropdownMenuItem(value: 'EUR', child: Text('EUR (€) - Euro')),
+                DropdownMenuItem(
+                  value: 'GBP',
+                  child: Text('GBP (£) - British Pound'),
+                ),
+                DropdownMenuItem(
+                  value: 'KES',
+                  child: Text('KES (KSh) - Kenyan Shilling'),
+                ),
+                DropdownMenuItem(
+                  value: 'GHS',
+                  child: Text('GHS (GH₵) - Ghanaian Cedi'),
+                ),
+                DropdownMenuItem(
+                  value: 'CAD',
+                  child: Text('CAD (CA\$) - Canadian Dollar'),
+                ),
+                DropdownMenuItem(
+                  value: 'AUD',
+                  child: Text('AUD (A\$) - Australian Dollar'),
+                ),
+                DropdownMenuItem(
+                  value: 'ZAR',
+                  child: Text('ZAR (R) - South African Rand'),
+                ),
+                DropdownMenuItem(
+                  value: 'INR',
+                  child: Text('INR (₹) - Indian Rupee'),
+                ),
+                DropdownMenuItem(value: 'AED', child: Text('AED - UAE Dirham')),
+              ],
+              onChanged: (final val) {
+                if (val != null) setState(() => _currency = val);
+              },
             ),
             SizedBox(height: 24.h),
-            Text('Industry Type *', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16.sp)),
+            Text(
+              'Industry Type *',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16.sp),
+            ),
             SizedBox(height: 12.h),
             Wrap(
               spacing: 8.w,
@@ -247,7 +331,10 @@ class _BusinessOnboardingPageState extends ConsumerState<BusinessOnboardingPage>
               ],
             ),
             SizedBox(height: 24.h),
-            Text('Business Size *', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16.sp)),
+            Text(
+              'Business Size *',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16.sp),
+            ),
             SizedBox(height: 12.h),
             Wrap(
               spacing: 8.w,
@@ -288,9 +375,17 @@ class _BusinessOnboardingPageState extends ConsumerState<BusinessOnboardingPage>
 
   Widget _buildStep2Goals() {
     final goalsList = [
-      {'id': 'inventory', 'label': 'Track inventory', 'icon': Icons.inventory_2_outlined},
+      {
+        'id': 'inventory',
+        'label': 'Track inventory',
+        'icon': Icons.inventory_2_outlined,
+      },
       {'id': 'sales', 'label': 'Increase sales', 'icon': Icons.trending_up},
-      {'id': 'finance', 'label': 'Better finance', 'icon': Icons.account_balance_wallet_outlined},
+      {
+        'id': 'finance',
+        'label': 'Better finance',
+        'icon': Icons.account_balance_wallet_outlined,
+      },
       {'id': 'crm', 'label': 'Manage CRM', 'icon': Icons.people_outline},
     ];
 
@@ -301,7 +396,10 @@ class _BusinessOnboardingPageState extends ConsumerState<BusinessOnboardingPage>
         children: [
           Text(
             'What are your goals?',
-            style: GoogleFonts.poppins(fontSize: 24.sp, fontWeight: FontWeight.bold),
+            style: GoogleFonts.poppins(
+              fontSize: 24.sp,
+              fontWeight: FontWeight.bold,
+            ),
           ),
           SizedBox(height: 32.h),
           Expanded(
@@ -328,16 +426,34 @@ class _BusinessOnboardingPageState extends ConsumerState<BusinessOnboardingPage>
                   },
                   child: Container(
                     decoration: BoxDecoration(
-                      border: Border.all(color: isSelected ? AppConfig.primaryColor : Colors.grey[300]!),
+                      border: Border.all(
+                        color: isSelected
+                            ? AppConfig.primaryColor
+                            : Colors.grey[300]!,
+                      ),
                       borderRadius: BorderRadius.circular(12.r),
-                      color: isSelected ? AppConfig.primaryColor.withOpacity(0.05) : Colors.white,
+                      color: isSelected
+                          ? AppConfig.primaryColor.withOpacity(0.05)
+                          : Colors.white,
                     ),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(goal['icon'] as IconData, color: isSelected ? AppConfig.primaryColor : Colors.grey),
+                        Icon(
+                          goal['icon'] as IconData,
+                          color: isSelected
+                              ? AppConfig.primaryColor
+                              : Colors.grey,
+                        ),
                         SizedBox(height: 8.h),
-                        Text(goal['label'] as String, style: TextStyle(fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
+                        Text(
+                          goal['label'] as String,
+                          style: TextStyle(
+                            fontWeight: isSelected
+                                ? FontWeight.bold
+                                : FontWeight.normal,
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -352,7 +468,7 @@ class _BusinessOnboardingPageState extends ConsumerState<BusinessOnboardingPage>
 
   Widget _buildStep3Modules() {
     const allModules = ModuleConfigs.allModules;
-    
+
     return Padding(
       padding: EdgeInsets.all(24.w),
       child: Column(
@@ -360,10 +476,16 @@ class _BusinessOnboardingPageState extends ConsumerState<BusinessOnboardingPage>
         children: [
           Text(
             'Select Your Modules',
-            style: GoogleFonts.poppins(fontSize: 24.sp, fontWeight: FontWeight.bold),
+            style: GoogleFonts.poppins(
+              fontSize: 24.sp,
+              fontWeight: FontWeight.bold,
+            ),
           ),
           SizedBox(height: 8.h),
-          const Text('Pick the tools you need to get started', style: TextStyle(color: Colors.grey)),
+          const Text(
+            'Pick the tools you need to get started',
+            style: TextStyle(color: Colors.grey),
+          ),
           SizedBox(height: 24.h),
           Expanded(
             child: ListView.builder(
@@ -404,13 +526,19 @@ class _BusinessOnboardingPageState extends ConsumerState<BusinessOnboardingPage>
             SizedBox(height: 32.h),
             Text(
               'You\'re All Set!',
-              style: GoogleFonts.poppins(fontSize: 28.sp, fontWeight: FontWeight.bold),
+              style: GoogleFonts.poppins(
+                fontSize: 28.sp,
+                fontWeight: FontWeight.bold,
+              ),
             ),
             SizedBox(height: 16.h),
             Text(
               'Welcome to BizMod, $_businessName! Let\'s start growing your business.',
               textAlign: TextAlign.center,
-              style: GoogleFonts.inter(fontSize: 18.sp, color: Colors.grey[700]),
+              style: GoogleFonts.inter(
+                fontSize: 18.sp,
+                color: Colors.grey[700],
+              ),
             ),
           ],
         ),
@@ -432,11 +560,17 @@ class _BusinessOnboardingPageState extends ConsumerState<BusinessOnboardingPage>
             onPressed: _nextStep,
             style: ElevatedButton.styleFrom(
               padding: EdgeInsets.symmetric(horizontal: 40.w, vertical: 15.h),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12.r),
+              ),
             ),
-            child: Text(_currentStep == _totalSteps - 1 
-                ? 'Go to Dashboard' 
-                : (_businessName.isNotEmpty ? 'Update & Continue' : 'Continue')),
+            child: Text(
+              _currentStep == _totalSteps - 1
+                  ? 'Go to Dashboard'
+                  : (_businessName.isNotEmpty
+                        ? 'Update & Continue'
+                        : 'Continue'),
+            ),
           ),
         ],
       ),

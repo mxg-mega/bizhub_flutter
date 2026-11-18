@@ -59,14 +59,15 @@ class StockInActions extends _$StockInActions {
         await supplierRepo.updateBalance(stockIn.supplierId, stockIn.totalCost);
       }
 
-      // 4. Log Financial Transaction (COGS)
+      // 4. Log Financial Transaction (COGS) — canonical type (§3.4)
       final tx = TransactionModel(
         id: const Uuid().v4(),
         businessId: businessId,
-        type: 'expense',
+        type: 'Expense',
         amount: stockIn.totalCost,
         category: FinancialCategory.cogs,
-        timestamp: stockIn.timestamp,
+        createdAt: stockIn.timestamp,
+        date: stockIn.timestamp,
         description: 'Restock from ${stockIn.supplierName}',
         referenceId: stockIn.id,
       );

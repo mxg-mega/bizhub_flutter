@@ -53,7 +53,7 @@ class PosRepositoryImpl implements PosRepository {
     final local = LocalSale(
       id: sale.id,
       businessId: sale.businessId,
-      timestamp: sale.timestamp,
+      timestamp: sale.date,
       total: sale.total,
       data: jsonEncode(sale.toJson()),
     );

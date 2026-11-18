@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../core/config/app_config.dart';
+import '../../../../core/config/router/app_router.dart';
 import '../../../../shared/providers/auth_provider.dart';
 
 class ProfilePage extends ConsumerWidget {
@@ -94,10 +96,8 @@ class ProfilePage extends ConsumerWidget {
             _ProfileOption(
               icon: Icons.business,
               title: 'Business Info',
-              subtitle: 'Manage business details',
-              onTap: () {
-                // TODO: Navigate to business info
-              },
+              subtitle: 'Manage business details & currency',
+              onTap: () => context.push(AppRouter.businessProfile),
             ),
             _ProfileOption(
               icon: Icons.security,

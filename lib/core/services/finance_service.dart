@@ -28,7 +28,7 @@ class FinanceService {
         .filter()
         .businessIdEqualTo(businessId)
         .and()
-        .timestampBetween(start, end)
+        .createdAtBetween(start, end)
         .findAll();
 
     double revenue = 0;

@@ -26,7 +26,7 @@ class InventoryService {
     required final double newQuantity,
     required final String userId,
     final String? reason,
-    final String type = 'adjustment',
+    final String kind = 'adjustment',
   }) async {
     await FirestoreService.runTransaction((final transaction) async {
       final productRef = FirestoreService.docIn(_getProductsPath(businessId), productId);
@@ -38,30 +38,39 @@ class InventoryService {
 
       final product = ProductModel.fromJson(snapshot.data()!);
       final oldQuantity = product.stockByLocation[locationId] ?? 0.0;
-      
+
       final Map<String, double> updatedStock = Map.from(product.stockByLocation);
       updatedStock[locationId] = newQuantity;
 
       // 1. Update Product Stock
       transaction.update(productRef, {'stockByLocation': updatedStock});
 
-      // 2. Create Adjustment Log
+      // 2. Create Adjustment Log — web shape (§3.6)
       final adjustmentId = _uuid.v4();
       final adjustmentRef = FirestoreService.docIn(_getAdjustmentsPath(businessId), adjustmentId);
-      
+
       final adjustment = InventoryAdjustmentModel(
         id: adjustmentId,
         productId: productId,
-        type: type,
+        productName: product.name,
+        type: 'adjustment',
+        kind: kind,
         changes: {
           locationId: {'old': oldQuantity, 'new': newQuantity},
         },
         timestamp: DateTime.now(),
         userId: userId,
         reason: reason,
+        notes: reason,
       );
 
-      transaction.set(adjustmentRef, adjustment.toJson());
+      transaction.set(
+        adjustmentRef,
+        FirestoreService.sanitizeForFirestore(
+          adjustment.toJson(),
+          timestampFields: InventoryAdjustmentModel.firestoreTimestampFields,
+        ),
+      );
     });
   }
 
@@ -73,7 +82,7 @@ class InventoryService {
     required final double delta,
     required final String userId,
     final String? reason,
-    final String type = 'adjustment',
+    final String kind = 'adjustment',
   }) async {
     await FirestoreService.runTransaction((final transaction) async {
       final productRef = FirestoreService.docIn(_getProductsPath(businessId), productId);
@@ -97,15 +106,24 @@ class InventoryService {
       final adjustment = InventoryAdjustmentModel(
         id: adjustmentId,
         productId: productId,
-        type: type,
+        productName: product.name,
+        type: 'adjustment',
+        kind: kind,
         changes: {
           locationId: {'old': oldQuantity, 'new': newQuantity},
         },
         timestamp: DateTime.now(),
         userId: userId,
         reason: reason,
+        notes: reason,
       );
-      transaction.set(adjustmentRef, adjustment.toJson());
+      transaction.set(
+        adjustmentRef,
+        FirestoreService.sanitizeForFirestore(
+          adjustment.toJson(),
+          timestampFields: InventoryAdjustmentModel.firestoreTimestampFields,
+        ),
+      );
     });
   }
 
@@ -144,14 +162,17 @@ class InventoryService {
       // 1. Update Product Stock
       transaction.update(productRef, {'stockByLocation': updatedStock});
 
-      // 2. Create Adjustment Log
+      // 2. Create Adjustment Log — web shape (§3.6): type is always
+      // 'adjustment' on the wire, timestamp stays an ISO string.
       final adjustmentId = _uuid.v4();
       final adjustmentRef = FirestoreService.docIn(_getAdjustmentsPath(businessId), adjustmentId);
-      
+
       final adjustment = InventoryAdjustmentModel(
         id: adjustmentId,
         productId: productId,
-        type: 'transfer',
+        productName: product.name,
+        type: 'adjustment',
+        kind: 'transfer',
         changes: {
           fromLocationId: {'old': sourceStock, 'new': updatedStock[fromLocationId]!},
           toLocationId: {'old': targetStock, 'new': updatedStock[toLocationId]!},
@@ -159,9 +180,16 @@ class InventoryService {
         timestamp: DateTime.now(),
         userId: userId,
         reason: reason ?? 'Transfer from $fromLocationId to $toLocationId',
+        notes: reason ?? 'Transfer from $fromLocationId to $toLocationId',
       );
 
-      transaction.set(adjustmentRef, adjustment.toJson());
+      transaction.set(
+        adjustmentRef,
+        FirestoreService.sanitizeForFirestore(
+          adjustment.toJson(),
+          timestampFields: InventoryAdjustmentModel.firestoreTimestampFields,
+        ),
+      );
     });
   }
 }

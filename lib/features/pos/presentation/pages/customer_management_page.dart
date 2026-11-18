@@ -69,7 +69,7 @@ class CustomerManagementPage extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text(
-                      '\$${customer.outstandingBalance.toStringAsFixed(2)}',
+                      '₦${customer.outstandingBalance.toStringAsFixed(2)}',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         color: customer.outstandingBalance > 0 ? Colors.red : Colors.green,

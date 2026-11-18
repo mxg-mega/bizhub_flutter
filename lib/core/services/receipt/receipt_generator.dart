@@ -6,13 +6,19 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:path_provider/path_provider.dart';
 import '../../../features/pos/data/models/sale_model.dart';
+import '../../../features/receipts/data/models/receipt_design_model.dart';
 import '../../../features/receipts/data/models/receipt_template_model.dart';
 import '../../../shared/models/business_model.dart';
 
 class ReceiptGenerator {
   final BlueThermalPrinter _bluetooth = BlueThermalPrinter.instance;
 
-  Future<void> printThermal(final SaleModel sale, final BusinessModel business, final ReceiptTemplateModel template) async {
+  Future<void> printThermal(
+    final SaleModel sale,
+    final BusinessModel business,
+    final ReceiptTemplateModel template, {
+    final ReceiptDesignModel? design,
+  }) async {
     if ((await _bluetooth.isConnected) == true) {
       final profile = await CapabilityProfile.load();
       final generator = Generator(template.paperSize == '80mm' ? PaperSize.mm80 : PaperSize.mm58, profile);
@@ -53,9 +59,47 @@ class ReceiptGenerator {
         PosColumn(text: sale.total.toStringAsFixed(2), width: 4, styles: const PosStyles(align: PosAlign.right, bold: true, height: PosTextSize.size2)),
       ]);
 
-      if (template.footerText != null && template.footerText!.isNotEmpty) {
+      final paymentAccounts = design?.showPaymentDetails == true
+          ? design!.unifiedBankAccounts
+          : const <ReceiptBankDetails>[];
+      if (paymentAccounts.isNotEmpty) {
         bytes += generator.hr();
-        bytes += generator.text(template.footerText!, styles: const PosStyles(align: PosAlign.center));
+        bytes += generator.text('PAYMENT DETAILS',
+            styles: const PosStyles(align: PosAlign.center, bold: true));
+        for (final account in paymentAccounts) {
+          if (account.bankName.trim().isNotEmpty) {
+            bytes += generator.text('Bank: ${account.bankName}',
+                styles: const PosStyles(align: PosAlign.left));
+          }
+          if (account.accountName.trim().isNotEmpty) {
+            bytes += generator.text('Name: ${account.accountName}',
+                styles: const PosStyles(align: PosAlign.left));
+          }
+          if (account.accountNumber.trim().isNotEmpty) {
+            bytes += generator.text('Acct: ${account.accountNumber}',
+                styles: const PosStyles(align: PosAlign.left));
+          }
+        }
+      }
+
+      final footerText = (template.footerText != null &&
+              template.footerText!.isNotEmpty)
+          ? template.footerText!
+          : (design?.footerText.isNotEmpty == true ? design!.footerText : null);
+      if (footerText != null) {
+        bytes += generator.hr();
+        bytes += generator.text(footerText,
+            styles: const PosStyles(align: PosAlign.center));
+      }
+
+      if (design != null && design.showNotesAndTerms &&
+          design.notesAndTerms.trim().isNotEmpty) {
+        bytes += generator.text(design.notesAndTerms,
+            styles: const PosStyles(align: PosAlign.left));
+      }
+      if (design?.subFooterText.trim().isNotEmpty == true) {
+        bytes += generator.text(design!.subFooterText,
+            styles: const PosStyles(align: PosAlign.center));
       }
 
       bytes += generator.feed(2);
@@ -65,7 +109,12 @@ class ReceiptGenerator {
     }
   }
 
-  Future<File> generatePdf(final SaleModel sale, final BusinessModel business, final ReceiptTemplateModel template) async {
+  Future<File> generatePdf(
+    final SaleModel sale,
+    final BusinessModel business,
+    final ReceiptTemplateModel template, {
+    final ReceiptDesignModel? design,
+  }) async {
     final pdf = pw.Document();
 
     pdf.addPage(
@@ -120,6 +169,38 @@ class ReceiptGenerator {
               ),
               
               pw.SizedBox(height: 20),
+              if (design?.showPaymentDetails == true &&
+                  design!.unifiedBankAccounts.isNotEmpty) ...[
+                pw.Divider(),
+                pw.Center(
+                  child: pw.Text('Payment Details',
+                      style: pw.TextStyle(
+                          fontSize: 9, fontWeight: pw.FontWeight.bold)),
+                ),
+                ...design.unifiedBankAccounts.map(
+                  (final account) => pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      if (account.bankName.trim().isNotEmpty)
+                        pw.Text('Bank: ${account.bankName}',
+                            style: const pw.TextStyle(fontSize: 9)),
+                      if (account.accountName.trim().isNotEmpty)
+                        pw.Text('Name: ${account.accountName}',
+                            style: const pw.TextStyle(fontSize: 9)),
+                      if (account.accountNumber.trim().isNotEmpty)
+                        pw.Text('Acct: ${account.accountNumber}',
+                            style: const pw.TextStyle(fontSize: 9)),
+                    ],
+                  ),
+                ),
+              ],
+              if (design != null &&
+                  design.showNotesAndTerms &&
+                  design.notesAndTerms.trim().isNotEmpty) ...[
+                pw.SizedBox(height: 10),
+                pw.Text(design.notesAndTerms,
+                    style: const pw.TextStyle(fontSize: 8)),
+              ],
               if (template.footerText != null && template.footerText!.isNotEmpty) 
                 pw.Center(
                   child: pw.Text(
@@ -127,6 +208,20 @@ class ReceiptGenerator {
                     textAlign: pw.TextAlign.center,
                     style: pw.TextStyle(fontSize: 9, fontStyle: pw.FontStyle.italic),
                   ),
+                )
+              else if (design?.footerText.isNotEmpty == true)
+                pw.Center(
+                  child: pw.Text(
+                    design!.footerText,
+                    textAlign: pw.TextAlign.center,
+                    style: pw.TextStyle(fontSize: 9, fontStyle: pw.FontStyle.italic),
+                  ),
+                ),
+              if (design?.subFooterText.trim().isNotEmpty == true)
+                pw.Center(
+                  child: pw.Text(design!.subFooterText,
+                      textAlign: pw.TextAlign.center,
+                      style: const pw.TextStyle(fontSize: 8)),
                 ),
             ],
           );

@@ -10,7 +10,7 @@ class AppUtils {
   static String formatTime(final DateTime date, {final String format = 'HH:mm'}) => DateFormat(format).format(date);
 
   // Currency formatting
-  static String formatCurrency(final double amount, {final String currency = '\$'}) => '$currency${amount.toStringAsFixed(2)}';
+  static String formatCurrency(final double amount, {final String currency = '₦'}) => '$currency${amount.toStringAsFixed(2)}';
 
   // Number formatting
   static String formatNumber(final int number) {

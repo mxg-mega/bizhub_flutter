@@ -88,7 +88,7 @@ class SuppliersPage extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text(
-                      '\$${supplier.balance.toStringAsFixed(2)}',
+                      '₦${supplier.balance.toStringAsFixed(2)}',
                       style: GoogleFonts.inter(
                         fontWeight: FontWeight.bold,
                         fontSize: 16.sp,

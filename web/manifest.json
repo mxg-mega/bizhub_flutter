@@ -1,11 +1,11 @@
 {
-    "name": "biz_module",
-    "short_name": "biz_module",
+    "name": "BizMod",
+    "short_name": "BizMod",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "BizMod",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

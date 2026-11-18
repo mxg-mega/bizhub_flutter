@@ -10,7 +10,9 @@ import '../database/local_models.dart';
 import '../models/sync_queue_model.dart';
 import '../models/transaction_model.dart';
 import '../config/firebase/firebase_config.dart';
+import 'firestore_service.dart';
 import '../../features/inventory/data/models/product_model.dart';
+import '../../features/inventory/data/models/inventory_adjustment_model.dart';
 import '../../features/inventory/data/models/location_model.dart';
 import '../../features/inventory/data/models/supplier_model.dart';
 import '../../features/inventory/data/models/stock_in_model.dart';
@@ -20,6 +22,7 @@ import '../../features/pos/data/models/customer_payment_model.dart';
 import '../../features/dashboard/data/models/expense_model.dart';
 import '../../features/dashboard/data/models/invitation_model.dart';
 import '../../features/receipts/data/models/receipt_template_model.dart';
+import '../../features/payments/data/models/transfer_model.dart';
 import '../../shared/providers/app_settings_provider.dart';
 
 part 'sync_service.g.dart';
@@ -90,12 +93,42 @@ class SyncService {
     }
   }
 
+  /// Wire-shape enforcement at push time (docs/PORTING_GUIDE.md §7.2): queued
+  /// payloads are raw model JSON (ISO strings), so the matching model's
+  /// `firestoreTimestampFields` allowlist converts them to Firestore Timestamps
+  /// here — the wire shape is then identical for online and offline writes.
+  /// `inventoryAdjustments` maps to an empty set (pure null-strip): its
+  /// `timestamp` must stay an ISO string (§3.6). Unknown collections keep the
+  /// legacy substring heuristic.
+  static Set<String>? _timestampFieldsForPath(final String collectionPath) {
+    final segments = collectionPath.split('/');
+    final collection = segments.isNotEmpty ? segments.last : '';
+    switch (collection) {
+      case 'sales':
+        return SaleModel.firestoreTimestampFields;
+      case 'transactions':
+        return TransactionModel.firestoreTimestampFields;
+      case 'products':
+        return ProductModel.firestoreTimestampFields;
+      case 'inventoryAdjustments':
+        return InventoryAdjustmentModel.firestoreTimestampFields;
+      case 'transfers':
+        return TransferModel.firestoreTimestampFields;
+      default:
+        return null;
+    }
+  }
+
   Future<void> _syncItem(final SyncQueueModel item) async {
     final docRef = FirebaseConfig.firestore.doc('${item.collectionPath}/${item.docId}');
     switch (item.action) {
       case 'create':
       case 'update':
-        await docRef.set(item.payload, SetOptions(merge: true));
+        final payload = FirestoreService.sanitizeForFirestore(
+          item.payload,
+          timestampFields: _timestampFieldsForPath(item.collectionPath),
+        );
+        await docRef.set(payload, SetOptions(merge: true));
         break;
       case 'delete':
         await docRef.delete();
@@ -135,14 +168,24 @@ class SyncService {
 
       final snapshot = await query.get();
       debugPrint('DEBUG: Firestore snapshot for $collectionPath contains ${snapshot.docs.length} docs');
-      
-      final items = fromJsons(snapshot.docs.map((final d) {
-        final data = d.data();
-        if (!data.containsKey('id')) data['id'] = d.id;
+
+      // Per-doc isolation: ONE unparseable doc must not silently abort the
+      // whole pull (it used to — leaving the local cache empty for the
+      // entire collection). Skipped docs are logged by id.
+      final items = <T>[];
+      for (final docSnapshot in snapshot.docs) {
+        final data = docSnapshot.data();
+        if (!data.containsKey('id')) data['id'] = docSnapshot.id;
         // Inject businessId if missing (often missing in subcollection docs)
         if (!data.containsKey('businessId')) data['businessId'] = businessId;
-        return data;
-      }).toList());
+        try {
+          items.addAll(fromJsons([data]));
+        } catch (e) {
+          debugPrint(
+            'SyncService.pull: skipping unparseable doc ${docSnapshot.id} in $collectionPath: $e',
+          );
+        }
+      }
 
       await _isar.writeTxn(() async {
         if (T == ProductModel) {
@@ -193,7 +236,7 @@ class SyncService {
             final local = LocalSale(
               id: item.id,
               businessId: item.businessId,
-              timestamp: item.timestamp,
+              timestamp: item.date,
               total: item.total,
               data: jsonEncode(item.toJson()),
             );

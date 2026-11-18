@@ -4,31 +4,77 @@ import 'auth_provider.dart';
 
 part 'currency_provider.g.dart';
 
+const Map<String, String> kCurrencySymbols = {
+  'USD': '\$',
+  'NGN': '₦',
+  'EUR': '€',
+  'GBP': '£',
+  'KES': 'KSh',
+  'GHS': 'GH₵',
+  'CAD': 'CA\$',
+  'AUD': 'A\$',
+  'ZAR': 'R',
+  'INR': '₹',
+  'AED': 'AED',
+  'JPY': '¥',
+  'CNY': '¥',
+};
+
+String getCurrencySymbol(final String code) =>
+    kCurrencySymbols[code.toUpperCase()] ?? code;
+
 @riverpod
 class CurrencyNotifier extends _$CurrencyNotifier {
   @override
   List<CurrencyModel> build() {
     final business = ref.watch(currentBusinessProvider);
-    if (business == null) return [_defaultCurrency()];
+    final baseCode = business?.currency ?? 'NGN';
 
     // Assume business settings has currencies list
-    final List<dynamic>? currenciesJson = business.settings?['currencies'];
+    final List<dynamic>? currenciesJson = business?.settings?['currencies'];
     if (currenciesJson == null || currenciesJson.isEmpty) {
-      return [_defaultCurrency()];
+      return [
+        CurrencyModel(
+          code: baseCode,
+          symbol: getCurrencySymbol(baseCode),
+          isBase: true,
+          rateToBase: 1.0,
+        ),
+      ];
     }
 
     return currenciesJson.map((final c) => CurrencyModel.fromJson(c)).toList();
   }
 
-  CurrencyModel _defaultCurrency() => const CurrencyModel(code: 'NGN', symbol: '₦', isBase: true);
+  CurrencyModel _defaultCurrency() {
+    final business = ref.read(currentBusinessProvider);
+    final baseCode = business?.currency ?? 'NGN';
+    return CurrencyModel(
+      code: baseCode,
+      symbol: getCurrencySymbol(baseCode),
+      isBase: true,
+      rateToBase: 1.0,
+    );
+  }
 
-  CurrencyModel get baseCurrency => state.firstWhere((final c) => c.isBase, orElse: () => state.first);
+  CurrencyModel get baseCurrency =>
+      state.firstWhere((final c) => c.isBase, orElse: () => state.first);
 
-  double convert(final double amount, final String fromCode, final String toCode) {
+  double convert(
+    final double amount,
+    final String fromCode,
+    final String toCode,
+  ) {
     if (fromCode == toCode) return amount;
-    
-    final from = state.firstWhere((final c) => c.code == fromCode, orElse: () => _defaultCurrency());
-    final to = state.firstWhere((final c) => c.code == toCode, orElse: () => _defaultCurrency());
+
+    final from = state.firstWhere(
+      (final c) => c.code == fromCode,
+      orElse: () => _defaultCurrency(),
+    );
+    final to = state.firstWhere(
+      (final c) => c.code == toCode,
+      orElse: () => _defaultCurrency(),
+    );
 
     // amount * (toRate / fromRate)
     return amount * (to.rateToBase / from.rateToBase);

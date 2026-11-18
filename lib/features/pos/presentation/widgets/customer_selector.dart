@@ -50,8 +50,8 @@ class CustomerSelector extends ConsumerWidget {
             ),
             items: [
               const DropdownMenuItem<String>(
-                value: null,
-                child: Text('Walk-in Customer'),
+                value: CustomerModel.walkInId,
+                child: Text(CustomerModel.walkInName),
               ),
               ...customers.map((final c) => DropdownMenuItem(
                 value: c.id,
@@ -59,7 +59,9 @@ class CustomerSelector extends ConsumerWidget {
               )),
             ],
             onChanged: (final val) {
-              final customer = val == null ? null : customers.firstWhere((final c) => c.id == val);
+              final customer = val == null || val == CustomerModel.walkInId
+                  ? null
+                  : customers.firstWhere((final c) => c.id == val);
               onCustomerSelected(customer);
             },
           ),

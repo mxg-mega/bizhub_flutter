@@ -64,10 +64,12 @@ class ModulesNotifier extends _$ModulesNotifier {
 
     // Firestore Commit
     try {
+      final currentUser = ref.read(currentUserProvider);
       await _moduleService.setModuleEnabled(
         businessId: business.id!,
         moduleId: moduleId,
         isEnabled: newState,
+        userId: currentUser?.id,
       );
     } catch (e) {
       // Revert on failure if needed, or just let the stream sync it back

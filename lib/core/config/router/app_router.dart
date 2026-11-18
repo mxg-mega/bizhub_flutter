@@ -12,6 +12,7 @@ import '../../../features/dashboard/presentation/pages/expenses_page.dart';
 import '../../../features/dashboard/presentation/pages/employee_management_page.dart';
 import '../../../features/modules/presentation/pages/modules_page.dart';
 import '../../../features/profile/presentation/pages/profile_page.dart';
+import '../../../features/profile/presentation/pages/business_profile_page.dart';
 import '../../../features/settings/presentation/pages/settings_page.dart';
 import '../../../features/zakat_tracker/presentation/zakat_page.dart';
 import '../../../features/inventory/presentation/pages/inventory_dashboard_page.dart';
@@ -26,9 +27,9 @@ import '../../../features/pos/presentation/pages/pos_page.dart';
 import '../../../features/pos/presentation/pages/sales_history_page.dart';
 import '../../../features/pos/presentation/pages/customer_management_page.dart';
 import '../../../features/pos/presentation/pages/sale_success_page.dart';
+import '../../../features/payments/presentation/pages/transfers_page.dart';
 import '../../../features/receipts/presentation/pages/receipt_designer_page.dart';
 import '../../../features/receipts/presentation/pages/printer_settings_page.dart';
-import '../../../features/onboarding/presentation/pages/onboarding_page.dart';
 import '../../../features/onboarding/presentation/pages/business_onboarding_page.dart';
 import '../../../shared/presentation/pages/coming_soon_page.dart';
 import '../../../shared/providers/auth_provider.dart';
@@ -89,11 +90,15 @@ class AppRouter {
   static const String printerSettings = '/printer-settings';
   static const String modules = '/modules';
   static const String profile = '/profile';
+  static const String businessProfile = '/business-profile';
   static const String settings = '/settings';
+  static const String menu = '/menu';
+  static const String more = '/more';
   static const String zakat = '/zakat';
   static const String inventory = '/inventory';
   static const String pos = '/pos';
   static const String salesHistory = '/sales-history';
+  static const String transfers = '/transfers';
   static const String saleSuccess = '/sale-success';
   static const String comingSoon = '/coming-soon';
 
@@ -215,6 +220,11 @@ class AppRouter {
             builder: (final context, final state) => const SalesHistoryPage(),
           ),
           GoRoute(
+            path: transfers,
+            name: 'transfers',
+            builder: (final context, final state) => const TransfersPage(),
+          ),
+          GoRoute(
             path: zakat,
             name: 'zakat-overview',
             builder: (final context, final state) => const ZakatPage(),
@@ -222,6 +232,16 @@ class AppRouter {
           GoRoute(
             path: settings,
             name: 'settings',
+            builder: (final context, final state) => const SettingsPage(),
+          ),
+          GoRoute(
+            path: menu,
+            name: 'menu',
+            builder: (final context, final state) => const SettingsPage(),
+          ),
+          GoRoute(
+            path: more,
+            name: 'more',
             builder: (final context, final state) => const SettingsPage(),
           ),
           GoRoute(
@@ -250,9 +270,11 @@ class AppRouter {
         parentNavigatorKey: rootNavigatorKey,
         builder: (final context, final state) {
           final Map<String, dynamic> extra = state.extra as Map<String, dynamic>;
-          return SaleSuccessPage(
-            sale: extra['sale'] as SaleModel,
-            business: extra['business'] as BusinessModel,
+          return Scaffold(
+            body: SaleSuccessPage(
+              sale: extra['sale'] as SaleModel,
+              business: extra['business'] as BusinessModel?,
+            ),
           );
         },
       ),
@@ -262,6 +284,12 @@ class AppRouter {
         name: 'profile',
         parentNavigatorKey: rootNavigatorKey,
         builder: (final context, final state) => const ProfilePage(),
+      ),
+      GoRoute(
+        path: businessProfile,
+        name: 'businessProfile',
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (final context, final state) => const BusinessProfilePage(),
       ),
       GoRoute(
         path: modules,

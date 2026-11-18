@@ -7,6 +7,9 @@ part 'customer_model.g.dart';
 @collection
 @JsonSerializable(fieldRename: FieldRename.none)
 class CustomerModel {
+  static const String walkInId = 'walk-in';
+  static const String walkInName = 'Walk-in Customer';
+
   Id get isarId => _fastHash(id);
 
   final String id;

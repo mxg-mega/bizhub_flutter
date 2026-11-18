@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../../../shared/models/user_model.dart';
+import '../../../../shared/providers/currency_provider.dart';
 import '../../../../shared/presentation/widgets/common_app_bar.dart';
 import '../../../../shared/providers/auth_provider.dart';
 import '../../data/models/sale_model.dart';
@@ -13,6 +14,7 @@ import '../../../../core/auth/role_permissions.dart';
 import '../../../../core/services/receipt/receipt_generator.dart';
 import '../../../../core/services/receipt_service.dart';
 import '../../../../core/services/report_service.dart';
+import '../../../receipts/data/models/receipt_design_model.dart';
 import '../../../receipts/presentation/providers/receipt_providers.dart';
 
 class SalesHistoryPage extends ConsumerStatefulWidget {
@@ -151,6 +153,7 @@ class _SaleCard extends ConsumerWidget {
   @override
   Widget build(final BuildContext context, final WidgetRef ref) {
     final currentRole = ref.watch(currentRoleProvider);
+    final currency = ref.watch(activeDisplayCurrencyProvider);
     final canApprove = user?.hasPermission(role: currentRole, module: 'pos', action: 'approve') ?? false;
     final isPending = sale.status == 'Draft' || sale.status == 'PendingPayment';
 
@@ -186,7 +189,7 @@ class _SaleCard extends ConsumerWidget {
           style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 14.sp),
         ),
         subtitle: Text(
-          DateFormat('MMM dd, hh:mm a').format(sale.timestamp),
+          DateFormat('MMM dd, hh:mm a').format(sale.date),
           style: GoogleFonts.inter(fontSize: 12.sp, color: Colors.grey),
         ),
         trailing: Column(
@@ -194,7 +197,7 @@ class _SaleCard extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             Text(
-              '\$${sale.total.toStringAsFixed(2)}',
+              '${currency.symbol}${sale.total.toStringAsFixed(2)}',
               style: GoogleFonts.inter(
                 fontWeight: FontWeight.bold,
                 fontSize: 16.sp,
@@ -224,7 +227,7 @@ class _SaleCard extends ConsumerWidget {
                         ),
                       ),
                       Text(
-                        '\$${item.totalPrice.toStringAsFixed(2)}',
+                        '${currency.symbol}${item.totalPrice.toStringAsFixed(2)}',
                         style: GoogleFonts.inter(fontSize: 13.sp, fontWeight: FontWeight.w600),
                       ),
                     ],
@@ -256,7 +259,17 @@ class _SaleCard extends ConsumerWidget {
                         onPressed: () async {
                           final business = ref.read(currentBusinessProvider);
                           final template = await ref.read(activeReceiptTemplateProvider.future);
-                          ReceiptGenerator().printThermal(sale, business!, template);
+                          ReceiptDesignModel? design;
+                          try {
+                            design = await ref
+                                .read(webReceiptDesignProvider.future);
+                          } catch (_) {}
+                          ReceiptGenerator().printThermal(
+                            sale,
+                            business!,
+                            template,
+                            design: design,
+                          );
                         },
                       ),
                       SizedBox(width: 8.w),

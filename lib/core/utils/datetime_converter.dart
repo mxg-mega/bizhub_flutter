@@ -51,3 +51,34 @@ class FirestoreDateTimeConverter implements JsonConverter<DateTime?, dynamic> {
   dynamic toJson(final DateTime? object) =>
       object == null ? null : Timestamp.fromDate(object);
 }
+
+/// Product `expirationDate` wire contract (docs/PORTING_GUIDE.md §3.5):
+/// a plain `yyyy-MM-dd` string — never a full ISO datetime, never a Timestamp.
+/// Reads tolerate all three (legacy Flutter writes used full ISO / Timestamp).
+class FlexibleDateConverter implements JsonConverter<DateTime?, dynamic> {
+  const FlexibleDateConverter();
+
+  static final RegExp _dateOnly = RegExp(r'^\d{4}-\d{2}-\d{2}$');
+
+  @override
+  DateTime? fromJson(final dynamic json) {
+    if (json == null) return null;
+    if (json is Timestamp) return json.toDate();
+    if (json is DateTime) return json;
+    if (json is String) {
+      final raw = json.trim();
+      if (raw.isEmpty) return null;
+      if (_dateOnly.hasMatch(raw)) {
+        final parts = raw.split('-');
+        return DateTime(
+            int.parse(parts[0]), int.parse(parts[1]), int.parse(parts[2]));
+      }
+      return DateTime.tryParse(raw);
+    }
+    return null;
+  }
+
+  @override
+  dynamic toJson(final DateTime? object) =>
+      object == null ? null : object.toLocal().toIso8601String().split('T').first;
+}

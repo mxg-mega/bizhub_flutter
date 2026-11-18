@@ -35,7 +35,7 @@ class CustomerStatementService {
           pw.Align(
             alignment: pw.Alignment.centerRight,
             child: pw.Text(
-              'Final Balance: \$${customer.outstandingBalance.toStringAsFixed(2)}',
+              'Final Balance: ₦${customer.outstandingBalance.toStringAsFixed(2)}',
               style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold),
             ),
           ),

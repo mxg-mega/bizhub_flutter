@@ -16,12 +16,18 @@ class AppConfig {
   static const bool enableFirebase = true;
 
   // App Theme Configuration
-  static const Color primaryColor = Color(0xFF2563EB);
-  static const Color secondaryColor = Color(0xFF3B82F6);
-  static const Color accentColor = Color(0xFF10B981);
-  static const Color errorColor = Color(0xFFEF4444);
-  static const Color warningColor = Color(0xFFF59E0B);
-  static const Color successColor = Color(0xFF10B981);
+  static const Color primaryColor = Color(0xFF0D7377);
+  static const Color secondaryColor = Color(0xFF5CCFD2);
+  static const Color accentColor = Color(0xFFF5A623);
+  static const Color errorColor = Color(0xFFC4392C);
+  static const Color warningColor = Color(0xFFD9961F);
+  static const Color successColor = Color(0xFF14663A);
+  static const Color surfaceColor = Color(0xFFFAFAF8);
+  static const Color cardColor = Color(0xFFFFFFFF);
+  static const Color outlineColor = Color(0xFFE2E5E7);
+  static const Color textPrimaryColor = Color(0xFF1A1A2E);
+  static const Color textSecondaryColor = Color(0xFF5B6470);
+  static const Color lowStockColor = Color(0xFFFFF1CC);
 
   // App Dimensions
   static const double defaultPadding = 16.0;

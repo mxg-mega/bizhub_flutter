@@ -1,27 +1,51 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../shared/models/module_state_model.dart';
 
 class ModuleService {
   static const String _localKey = 'enabled_modules';
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
+  // NextJS primary path: businesses/{businessId}/modules/enabled
+  DocumentReference _getModulesDocRef(final String businessId) {
+    return _firestore
+        .collection('businesses')
+        .doc(businessId)
+        .collection('modules')
+        .doc('enabled');
+  }
+
+  // Legacy fallback path: businesses/{businessId}/settings/modules
+  DocumentReference _getLegacyModulesDocRef(final String businessId) {
+    return _firestore
+        .collection('businesses')
+        .doc(businessId)
+        .collection('settings')
+        .doc('modules');
+  }
+
   // Fetch enabled module IDs from Firestore for a specific business
   Future<List<String>> getEnabledModuleIds(final String businessId) async {
     try {
-      final doc = await _firestore
-          .collection('businesses')
-          .doc(businessId)
-          .collection('settings')
-          .doc('modules')
-          .get();
+      // 1. Try NextJS path first
+      var doc = await _getModulesDocRef(businessId).get();
+
+      // 2. Fallback to legacy path if document doesn't exist
+      if (!doc.exists) {
+        final legacyDoc = await _getLegacyModulesDocRef(businessId).get();
+        if (legacyDoc.exists) {
+          doc = legacyDoc;
+        }
+      }
 
       if (doc.exists) {
-        final data = doc.data() as Map<String, dynamic>;
-        // Data is a map of module IDs to boolean states
-        return data.entries
-            .where((final e) => e.value == true)
-            .map((final e) => e.key)
-            .toList();
+        final data = doc.data() as Map<String, dynamic>?;
+        if (data != null) {
+          return data.entries
+              .where((final e) => ModuleStateModel.isEnabled(e.value))
+              .map((final e) => e.key)
+              .toList();
+        }
       }
     } catch (e) {
       // Fallback to local storage if Firestore fails
@@ -30,18 +54,67 @@ class ModuleService {
     return [];
   }
 
+  // Fetch complete module states map
+  Future<Map<String, ModuleStateModel>> getModuleStates(final String businessId) async {
+    try {
+      var doc = await _getModulesDocRef(businessId).get();
+      if (!doc.exists) {
+        final legacyDoc = await _getLegacyModulesDocRef(businessId).get();
+        if (legacyDoc.exists) {
+          doc = legacyDoc;
+        }
+      }
+
+      if (doc.exists) {
+        final data = doc.data() as Map<String, dynamic>?;
+        if (data != null) {
+          final Map<String, ModuleStateModel> result = {};
+          data.forEach((final key, final value) {
+            result[key] = ModuleStateModel.fromDynamic(value);
+          });
+          return result;
+        }
+      }
+    } catch (_) {}
+    return {};
+  }
+
   // Update enabled state in Firestore
   Future<void> setModuleEnabled({
     required final String businessId,
     required final String moduleId,
     required final bool isEnabled,
+    final String? userId,
+    final String? version,
   }) async {
-    await _firestore
-        .collection('businesses')
-        .doc(businessId)
-        .collection('settings')
-        .doc('modules')
-        .set({moduleId: isEnabled}, SetOptions(merge: true));
+    final payload = {
+      moduleId: {
+        'enabled': isEnabled,
+        'lastUpdated': FieldValue.serverTimestamp(),
+        'installedAt': FieldValue.serverTimestamp(),
+        'installedBy': userId ?? 'system',
+        'version': version ?? '1.0.0',
+      }
+    };
+
+    // Update NextJS path with merge
+    await _getModulesDocRef(businessId).set(payload, SetOptions(merge: true));
+
+    // If enabled, also add to global moduleInstallations collection (matching NextJS behavior)
+    if (isEnabled) {
+      try {
+        await _firestore.collection('moduleInstallations').add({
+          'moduleId': moduleId,
+          'businessId': businessId,
+          'installedAt': FieldValue.serverTimestamp(),
+          'installedBy': userId ?? 'system',
+          'version': version ?? '1.0.0',
+          'status': 'active',
+        });
+      } catch (_) {
+        // Non-fatal background audit logging
+      }
+    }
 
     // Update local cache
     await _updateLocalCache(moduleId, isEnabled);
@@ -49,24 +122,20 @@ class ModuleService {
 
   // Real-time listener
   Stream<List<String>> subscribeToEnabledModules(final String businessId) {
-    return _firestore
-        .collection('businesses')
-        .doc(businessId)
-        .collection('settings')
-        .doc('modules')
-        .snapshots()
-        .map((final snapshot) {
+    return _getModulesDocRef(businessId).snapshots().map((final snapshot) {
       if (snapshot.exists) {
-        final data = snapshot.data() as Map<String, dynamic>;
-        final enabledIds = data.entries
-            .where((final e) => e.value == true)
-            .map((final e) => e.key)
-            .toList();
-        
-        // Update local storage in background
-        _syncLocalCache(enabledIds);
-        
-        return enabledIds;
+        final data = snapshot.data() as Map<String, dynamic>?;
+        if (data != null) {
+          final enabledIds = data.entries
+              .where((final e) => ModuleStateModel.isEnabled(e.value))
+              .map((final e) => e.key)
+              .toList();
+
+          // Update local storage in background
+          _syncLocalCache(enabledIds);
+
+          return enabledIds;
+        }
       }
       return [];
     });

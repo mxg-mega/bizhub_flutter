@@ -24,7 +24,7 @@ Stream<List<TransactionModel>> transactionHistory(final TransactionHistoryRef re
       .where()
       .filter()
       .businessIdEqualTo(businessId)
-      .sortByTimestampDesc()
+      .sortByCreatedAtDesc()
       .watch(fireImmediately: true);
 }
 
@@ -34,12 +34,13 @@ Stream<Map<DateTime, DailyFinance>> dailyFinance(final DailyFinanceRef ref) {
     data: (final transactions) {
       final Map<DateTime, DailyFinance> daily = {};
       for (final tx in transactions) {
-        final date = DateTime(tx.timestamp.year, tx.timestamp.month, tx.timestamp.day);
+        final date = DateTime(tx.createdAt.year, tx.createdAt.month, tx.createdAt.day);
         final current = daily[date] ?? DailyFinance();
         
-        if (tx.type == 'sale') {
+        // Case-insensitive: legacy cached rows may hold 'sale'/'income'/'expense'
+        if (tx.type.toLowerCase() == 'sale' || tx.type.toLowerCase() == 'income') {
           daily[date] = DailyFinance(revenue: current.revenue + tx.amount, expense: current.expense);
-        } else if (tx.type == 'expense') {
+        } else if (tx.type.toLowerCase() == 'expense') {
           daily[date] = DailyFinance(revenue: current.revenue, expense: current.expense + tx.amount);
         }
       }

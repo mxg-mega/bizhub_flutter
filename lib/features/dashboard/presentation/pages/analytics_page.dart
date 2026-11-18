@@ -117,7 +117,7 @@ class _SummaryCard extends StatelessWidget {
           SizedBox(height: 4.h),
           FittedBox(
             child: Text(
-              '\$${value.toStringAsFixed(2)}',
+              '₦${value.toStringAsFixed(2)}',
               style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold, color: color),
             ),
           ),

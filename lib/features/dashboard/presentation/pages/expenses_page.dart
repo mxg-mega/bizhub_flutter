@@ -65,7 +65,7 @@ class ExpensesPage extends ConsumerWidget {
       child: Column(
         children: [
           Text('Total Expenses', style: TextStyle(color: Colors.red[700], fontSize: 14.sp)),
-          Text('\$${total.toStringAsFixed(2)}', style: GoogleFonts.inter(fontSize: 28.sp, fontWeight: FontWeight.bold, color: Colors.red[900])),
+          Text('₦${total.toStringAsFixed(2)}', style: GoogleFonts.inter(fontSize: 28.sp, fontWeight: FontWeight.bold, color: Colors.red[900])),
         ],
       ),
     );
@@ -101,7 +101,7 @@ class _AddExpenseFormState extends ConsumerState<_AddExpenseForm> {
           TextField(
             controller: _amountController,
             keyboardType: TextInputType.number,
-            decoration: const InputDecoration(labelText: 'Amount', prefixText: '\$ '),
+            decoration: const InputDecoration(labelText: 'Amount', prefixText: '₦ '),
           ),
           SizedBox(height: 16.h),
           DropdownButtonFormField<String>(
@@ -157,7 +157,7 @@ class _ExpenseCard extends StatelessWidget {
         leading: CircleAvatar(backgroundColor: Colors.red[50], child: const Icon(Icons.outbound_outlined, color: Colors.red, size: 20)),
         title: Text(expense.category, style: const TextStyle(fontWeight: FontWeight.bold)),
         subtitle: Text(DateFormat('MMM dd, yyyy').format(expense.date)),
-        trailing: Text('-\$${expense.amount.toStringAsFixed(2)}', style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+        trailing: Text('-₦${expense.amount.toStringAsFixed(2)}', style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
       ),
     );
 }

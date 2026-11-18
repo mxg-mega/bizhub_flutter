@@ -26,11 +26,37 @@ class FirestoreService {
     return _db.collection(collectionPath).doc(id);
   }
 
-  static Map<String, dynamic> sanitizeForFirestore(final Map<String, dynamic> data) {
+  /// Prepares a model payload for a Firestore write.
+  ///
+  /// - Strips `null` values (a `null` under `set(merge: true)` DELETES the
+  ///   field in Firestore — docs/PORTING_GUIDE.md §0.2).
+  /// - Converts ISO-8601 strings / DateTimes into Firestore Timestamps for
+  ///   date-like fields.
+  ///
+  /// [timestampFields] — explicit allowlist of Timestamp-typed field names
+  /// (checked at every nesting depth). Use this for entities whose contract
+  /// mixes formats, e.g. `SaleModel.firestoreTimestampFields` (Sale.date must
+  /// stay an ISO string and Product.expirationDate a `yyyy-MM-dd` string).
+  /// When omitted, the legacy substring heuristic
+  /// [_isTimestampField] applies (keys containing `date`/`time`/…).
+  static Map<String, dynamic> sanitizeForFirestore(
+    final Map<String, dynamic> data, {
+    final Set<String>? timestampFields,
+  }) {
+    return _sanitizeMap(data, timestampFields: timestampFields);
+  }
+
+  static Map<String, dynamic> _sanitizeMap(
+    final Map<String, dynamic> data, {
+    final Set<String>? timestampFields,
+  }) {
     final Map<String, dynamic> result = {};
     data.forEach((final key, final value) {
       if (value == null) return;
-      if (value is String && _isTimestampField(key)) {
+      final bool isTimestampField = timestampFields != null
+          ? timestampFields.contains(key)
+          : _isTimestampField(key);
+      if (isTimestampField && value is String) {
         final parsed = DateTime.tryParse(value);
         if (parsed != null) {
           result[key] = Timestamp.fromDate(parsed);
@@ -42,12 +68,41 @@ class FirestoreService {
         return;
       }
       if (value is Map<String, dynamic>) {
-        result[key] = sanitizeForFirestore(value);
+        result[key] = _sanitizeMap(value, timestampFields: timestampFields);
+        return;
+      }
+      if (value is Map) {
+        result[key] = _sanitizeMap(
+          Map<String, dynamic>.from(value),
+          timestampFields: timestampFields,
+        );
+        return;
+      }
+      if (value is List) {
+        result[key] = _sanitizeList(value, timestampFields: timestampFields);
         return;
       }
       result[key] = value;
     });
     return result;
+  }
+
+  static List<dynamic> _sanitizeList(
+    final List<dynamic> list, {
+    final Set<String>? timestampFields,
+  }) {
+    return list.map((final element) {
+      if (element is Map<String, dynamic>) {
+        return _sanitizeMap(element, timestampFields: timestampFields);
+      }
+      if (element is Map) {
+        return _sanitizeMap(
+          Map<String, dynamic>.from(element),
+          timestampFields: timestampFields,
+        );
+      }
+      return element;
+    }).toList();
   }
 
   static bool _isTimestampField(final String key) {

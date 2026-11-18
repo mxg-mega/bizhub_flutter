@@ -67,11 +67,13 @@ class LocationRepositoryImpl implements LocationRepository {
 
   @override
   Future<void> saveLocation(final String businessId, final LocationModel location) async {
+    // Web stamps `updatedAt` on every location write (use-locations.tsx:85-88)
+    final stamped = location.copyWith(updatedAt: DateTime.now());
     final local = LocalLocation(
-      id: location.id,
-      name: location.name,
+      id: stamped.id,
+      name: stamped.name,
       businessId: businessId,
-      data: jsonEncode(location.toJson()),
+      data: jsonEncode(stamped.toJson()),
     );
 
     await _isar.writeTxn(() async => await _isar.localLocations.put(local));
@@ -79,8 +81,8 @@ class LocationRepositoryImpl implements LocationRepository {
     await _syncService.addToQueue(
       action: 'update',
       collectionPath: _getLocationsPath(businessId),
-      docId: location.id,
-      payload: location.toJson(),
+      docId: stamped.id,
+      payload: stamped.toJson(),
     );
   }
 

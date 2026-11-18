@@ -25,7 +25,7 @@ class ReceiptService {
               ),
               pw.SizedBox(height: 20),
               pw.Text('Receipt #: ${sale.id.substring(0, 8).toUpperCase()}'),
-              pw.Text('Date: ${sale.timestamp.toString()}'),
+              pw.Text('Date: ${sale.date.toString()}'),
               pw.Divider(),
               pw.Table(
                 children: [
@@ -50,7 +50,7 @@ class ReceiptService {
                 mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                 children: [
                   pw.Text('Total:', style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold)),
-                  pw.Text('\$${sale.total.toStringAsFixed(2)}', style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold)),
+                  pw.Text('₦${sale.total.toStringAsFixed(2)}', style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold)),
                 ],
               ),
               pw.SizedBox(height: 30),

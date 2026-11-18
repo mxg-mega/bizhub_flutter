@@ -208,8 +208,8 @@ class _ReceiptPreview extends StatelessWidget {
           SizedBox(height: 12.h),
           if (!isMinimal) const Divider(),
           SizedBox(height: 8.h),
-          _itemRow('Sample Item 1', '1 x \$10.00', '10.00', template.layoutStyle),
-          _itemRow('Sample Item 2', '2 x \$12.50', '25.00', template.layoutStyle),
+          _itemRow('Sample Item 1', '1 x ₦10.00', '10.00', template.layoutStyle),
+          _itemRow('Sample Item 2', '2 x ₦12.50', '25.00', template.layoutStyle),
           SizedBox(height: 8.h),
           const Divider(),
           SizedBox(height: 12.h),
@@ -224,7 +224,7 @@ class _ReceiptPreview extends StatelessWidget {
                 ),
               ),
               Text(
-                '\$35.00', 
+                '₦35.00', 
                 style: GoogleFonts.inter(
                   fontWeight: FontWeight.bold,
                   fontSize: isModern ? 16.sp : 14.sp,
@@ -256,7 +256,7 @@ class _ReceiptPreview extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(name, style: GoogleFonts.inter(fontSize: 12.sp, fontWeight: FontWeight.w500)),
-              Text('\$$total', style: GoogleFonts.inter(fontSize: 12.sp, fontWeight: FontWeight.w600)),
+              Text('₦$total', style: GoogleFonts.inter(fontSize: 12.sp, fontWeight: FontWeight.w600)),
             ],
           ),
           if (!isMinimal)

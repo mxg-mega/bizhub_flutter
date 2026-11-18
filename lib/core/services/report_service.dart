@@ -18,7 +18,7 @@ class ReportService {
       for (final item in sale.items) {
         rows.add([
           sale.id,
-          DateFormat('yyyy-MM-dd HH:mm').format(sale.timestamp),
+          DateFormat('yyyy-MM-dd HH:mm').format(sale.date),
           sale.customerId ?? 'Guest',
           item.name,
           item.quantity,
@@ -51,7 +51,7 @@ class ReportService {
         build: (final context) => [
           pw.SizedBox(height: 20),
           _buildSummaryGrid([
-            _SummaryItem('Total Revenue', '\$${totalRevenue.toStringAsFixed(2)}'),
+            _SummaryItem('Total Revenue', '₦${totalRevenue.toStringAsFixed(2)}'),
             _SummaryItem('Total Invoices', '${sales.length}'),
             _SummaryItem('Paid Invoices', '$paidCount'),
             _SummaryItem('Collection Rate', '${sales.isEmpty ? 0 : ((paidCount / sales.length) * 100).toStringAsFixed(1)}%'),
@@ -104,7 +104,7 @@ class ReportService {
             _SummaryItem('Total Items', '${products.length}'),
             _SummaryItem('Low Stock Alerts', '${lowStockItems.length}', color: PdfColors.red),
             _SummaryItem('Expiring Soon', '${expiringSoon.length}', color: PdfColors.orange),
-            _SummaryItem('Inventory Worth', '\$${products.fold(0.0, (final sum, final p) => sum + (p.price * p.totalStock)).toStringAsFixed(2)}'),
+            _SummaryItem('Inventory Worth', '₦${products.fold(0.0, (final sum, final p) => sum + (p.price * p.totalStock)).toStringAsFixed(2)}'),
           ]),
           pw.SizedBox(height: 30),
           pw.Text('LOW STOCK ALERT', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, color: PdfColors.red)),
@@ -173,10 +173,10 @@ class ReportService {
       headers: ['Invoice', 'Date', 'Customer', 'Items', 'Total', 'Status'],
       data: sales.map((final s) => [
         s.id.substring(0, 8).toUpperCase(),
-        DateFormat('MM/dd/yy').format(s.timestamp),
+        DateFormat('MM/dd/yy').format(s.date),
         s.customerId ?? 'Guest',
         s.items.length.toString(),
-        '\$${s.total.toStringAsFixed(2)}',
+        '₦${s.total.toStringAsFixed(2)}',
         s.status,
       ]).toList(),
       headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, color: PdfColors.white),

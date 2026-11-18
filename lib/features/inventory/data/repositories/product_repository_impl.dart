@@ -122,48 +122,74 @@ class ProductRepositoryImpl implements ProductRepository {
     );
   }
 
+  /// Field-targeted patch: updates the local Isar JSON in place and queues
+  /// ONLY the patched fields. The sync worker writes with merge:true, so
+  /// unrelated product fields (price, category, units, expiration...) are
+  /// never touched. The previous whole-object rewrite zeroed `price` and
+  /// clobbered `category` on every stock change (docs/PORTING_GUIDE.md §3.5).
+  Future<void> _patchProduct(
+    final String businessId,
+    final String id,
+    final Map<String, dynamic> patch,
+  ) async {
+    // Null values would DELETE those fields on a merge:true write — drop them
+    patch.removeWhere((final _, final v) => v == null);
+
+    final local = await _isar.localProducts.where().idEqualTo(id).findFirst();
+    if (local != null) {
+      final data =
+          Map<String, dynamic>.from(jsonDecode(local.data) as Map<String, dynamic>);
+      data.addAll(patch);
+      await _isar.writeTxn(() async {
+        await _isar.localProducts.put(
+          LocalProduct(
+            id: local.id,
+            name: local.name,
+            sku: local.sku,
+            businessId: local.businessId,
+            isArchived: (data['isArchived'] as bool?) ?? local.isArchived,
+            data: jsonEncode(data),
+          ),
+        );
+      });
+    }
+
+    await _syncService.addToQueue(
+      action: 'update',
+      collectionPath: _getProductsPath(businessId),
+      docId: id,
+      payload: patch,
+    );
+  }
+
   @override
   Future<void> updateStock(
     final String businessId,
     final String productId,
     final Map<String, double> stockByLocation,
   ) async {
-    final product = await getProduct(businessId, productId);
-    if (product != null) {
-      final updatedProduct = ProductModel(
-        id: product.id,
-        name: product.name,
-        sku: product.sku,
-        description: product.description,
-        cost: product.cost,
-        stockByLocation: stockByLocation,
-        unitSystemVersion: product.unitSystemVersion,
-        unitChain: product.unitChain,
-        priceConfigs: product.priceConfigs,
-        isArchived: product.isArchived,
-      );
-      await saveProduct(businessId, updatedProduct);
-    }
+    await _patchProduct(businessId, productId, <String, dynamic>{
+      'stockByLocation': stockByLocation,
+      'updatedAt': DateTime.now().toIso8601String(),
+    });
   }
 
   @override
-  Future<void> archiveProduct(final String businessId, final String id) async {
-    final product = await getProduct(businessId, id);
-    if (product != null) {
-      final updatedProduct = ProductModel(
-        id: product.id,
-        name: product.name,
-        sku: product.sku,
-        description: product.description,
-        cost: product.cost,
-        stockByLocation: product.stockByLocation,
-        unitSystemVersion: product.unitSystemVersion,
-        unitChain: product.unitChain,
-        priceConfigs: product.priceConfigs,
-        isArchived: true,
-      );
-      await saveProduct(businessId, updatedProduct);
-    }
+  Future<void> archiveProduct(
+    final String businessId,
+    final String id, {
+    final String? archivedBy,
+    final String? archivedByName,
+    final String? archivedReason,
+  }) async {
+    await _patchProduct(businessId, id, <String, dynamic>{
+      'isArchived': true,
+      'archivedAt': DateTime.now().toIso8601String(),
+      'archivedBy': archivedBy,
+      'archivedByName': archivedByName,
+      'archivedReason': archivedReason,
+      'updatedAt': DateTime.now().toIso8601String(),
+    });
   }
 
   @override

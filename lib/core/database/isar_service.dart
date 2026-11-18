@@ -9,6 +9,7 @@ import '../../features/inventory/data/models/supplier_model.dart';
 import '../../features/inventory/data/models/stock_in_model.dart';
 import '../../features/pos/data/models/sale_model.dart';
 import '../../features/pos/data/models/customer_payment_model.dart';
+import '../../features/payments/data/models/transfer_model.dart';
 import '../../features/dashboard/data/models/expense_model.dart';
 import '../../features/dashboard/data/models/invitation_model.dart';
 import '../../features/receipts/data/models/receipt_template_model.dart';
@@ -34,6 +35,7 @@ Future<Isar> isarDatabase(final IsarDatabaseRef ref) async {
       InvitationModelSchema,
       ReceiptTemplateModelSchema,
       CustomerPaymentModelSchema,
+      TransferModelSchema,
       SyncQueueModelSchema,
     ],
     directory: dir.path,
@@ -97,7 +99,7 @@ class IsarService {
     final local = LocalSale(
       id: sale.id,
       businessId: sale.businessId,
-      timestamp: sale.timestamp,
+      timestamp: sale.date,
       total: sale.total,
       data: jsonEncode(sale.toJson()),
     );

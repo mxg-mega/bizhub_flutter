@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../shared/models/business_model.dart';
 import '../../shared/models/membership_model.dart';
+import '../../shared/models/module_state_model.dart';
 import '../../shared/models/user_model.dart';
 import '../constants/role_configs.dart';
 import 'role_service.dart';
@@ -70,17 +71,23 @@ class BusinessService {
       'createdAt': now.toIso8601String(),
     });
 
-    // 3. Initialize Modules
-    final Map<String, bool> moduleStates = {};
+    // 3. Initialize Modules in NextJS compatible format (businesses/{businessId}/modules/enabled)
+    final Map<String, dynamic> modulesData = {};
     for (final moduleId in data.selectedModules) {
-      moduleStates[moduleId] = true;
+      modulesData[moduleId] = {
+        'enabled': true,
+        'lastUpdated': FieldValue.serverTimestamp(),
+        'installedAt': FieldValue.serverTimestamp(),
+        'installedBy': ownerId,
+        'version': '1.0.0',
+      };
     }
     await _firestore
         .collection('businesses')
         .doc(businessId)
-        .collection('settings')
-        .doc('modules')
-        .set(moduleStates);
+        .collection('modules')
+        .doc('enabled')
+        .set(modulesData);
 
     // 4. Seed Default Roles
     await _roleService.seedDefaultRoles(businessId);
@@ -138,15 +145,36 @@ class BusinessService {
   }
 
   Future<Map<String, bool>> getBusinessModules(final String businessId) async {
-    final doc = await _firestore
+    // 1. Check primary NextJS path
+    var doc = await _firestore
         .collection('businesses')
         .doc(businessId)
-        .collection('settings')
-        .doc('modules')
+        .collection('modules')
+        .doc('enabled')
         .get();
+
+    // 2. Fallback to legacy settings/modules path if not found
+    if (!doc.exists) {
+      final legacyDoc = await _firestore
+          .collection('businesses')
+          .doc(businessId)
+          .collection('settings')
+          .doc('modules')
+          .get();
+      if (legacyDoc.exists) {
+        doc = legacyDoc;
+      }
+    }
     
     if (doc.exists) {
-      return Map<String, bool>.from(doc.data()!);
+      final data = doc.data();
+      if (data != null) {
+        final Map<String, bool> result = {};
+        data.forEach((final key, final value) {
+          result[key] = ModuleStateModel.isEnabled(value);
+        });
+        return result;
+      }
     }
     return {};
   }
@@ -183,17 +211,22 @@ class BusinessService {
         });
 
     // 3. Update Modules
-    final Map<String, bool> moduleStates = {};
+    final Map<String, dynamic> modulesData = {};
     for (final moduleId in data.selectedModules) {
-      moduleStates[moduleId] = true;
+      modulesData[moduleId] = {
+        'enabled': true,
+        'lastUpdated': FieldValue.serverTimestamp(),
+        'installedAt': FieldValue.serverTimestamp(),
+        'installedBy': ownerId,
+        'version': '1.0.0',
+      };
     }
-    // Note: This replaces existing module settings. If we want to merge, we should fetch first.
     await _firestore
         .collection('businesses')
         .doc(businessId)
-        .collection('settings')
-        .doc('modules')
-        .set(moduleStates);
+        .collection('modules')
+        .doc('enabled')
+        .set(modulesData, SetOptions(merge: true));
 
     // 4. Update user status if needed
     await _firestore.collection('users').doc(ownerId).update({
@@ -220,5 +253,58 @@ class BusinessService {
       }
       await AuthService.saveUserToLocalStorage(updatedUser);
     }
+  }
+
+  Future<BusinessModel?> updateBusinessInfo({
+    required final String businessId,
+    required final String name,
+    required final String currency,
+    final String? industry,
+    final String? category,
+    final String? size,
+    final String? phone,
+    final String? email,
+    final String? address,
+    final String? website,
+  }) async {
+    final now = DateTime.now();
+    final updates = <String, dynamic>{
+      'name': name,
+      'settings.currency': currency,
+      'settings.currencyCode': currency,
+      'updatedAt': now,
+    };
+    if (industry != null) updates['industry'] = industry;
+    if (category != null) updates['category'] = category;
+    if (size != null) updates['size'] = size;
+    if (phone != null) updates['phone'] = phone;
+    if (email != null) updates['email'] = email;
+    if (address != null) updates['address'] = address;
+    if (website != null) updates['website'] = website;
+
+    await _firestore.collection('businesses').doc(businessId).update(updates);
+
+    await _firestore
+        .collection('businesses')
+        .doc(businessId)
+        .collection('settings')
+        .doc('info')
+        .set({
+      'name': name,
+      if (industry != null) 'industry': industry,
+      if (category != null) 'category': category,
+      if (phone != null) 'phone': phone,
+      if (email != null) 'email': email,
+      if (address != null) 'address': address,
+      if (website != null) 'website': website,
+      'currency': currency,
+      'updatedAt': now.toIso8601String(),
+    }, SetOptions(merge: true));
+
+    final updated = await AuthService.getBusinessFromFirestore(businessId);
+    if (updated != null) {
+      await AuthService.saveBusinessToLocalStorage(updated);
+    }
+    return updated;
   }
 }

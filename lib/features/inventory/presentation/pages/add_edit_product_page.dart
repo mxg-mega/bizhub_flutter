@@ -60,18 +60,29 @@ class _AddEditProductPageState extends ConsumerState<AddEditProductPage> {
     final product = ProductModel(
       id: widget.product?.id ?? const Uuid().v4(),
       name: _nameController.text,
-      sku: _skuController.text.isNotEmpty ? _skuController.text : null,
+      // Web type marks sku/category as required strings — write '', not null
+      sku: _skuController.text.trim(),
       description: _descriptionController.text.isNotEmpty ? _descriptionController.text : null,
-      category: _categoryController.text.isNotEmpty ? _categoryController.text : null,
+      category: _categoryController.text.trim(),
       cost: double.tryParse(_costController.text) ?? 0.0,
       price: double.tryParse(_priceController.text) ?? 0.0,
-      stockByLocation: stockByLocation.isNotEmpty 
-          ? stockByLocation 
+      stockByLocation: stockByLocation.isNotEmpty
+          ? stockByLocation
           : widget.product?.stockByLocation ?? {'main': 0.0},
       unitSystemVersion: widget.product?.unitSystemVersion ?? 'enhanced',
       unitChain: widget.product?.unitChain,
       priceConfigs: widget.product?.priceConfigs,
+      // Preserve unit-system + pricing state the form doesn't edit — a bare
+      // rebuild used to drop these on every edit.
+      unitChainTemplate: widget.product?.unitChainTemplate,
+      unitPrices: widget.product?.unitPrices,
+      sellingUnit: widget.product?.sellingUnit ?? 'pcs',
+      purchaseUnit: widget.product?.purchaseUnit ?? 'pcs',
+      expirationDate: widget.product?.expirationDate,
+      bagUnit: widget.product?.bagUnit,
       isArchived: widget.product?.isArchived ?? false,
+      createdBy: widget.product?.createdBy,
+      createdByName: widget.product?.createdByName,
       updatedAt: DateTime.now(),
     );
 
@@ -157,7 +168,7 @@ class _AddEditProductPageState extends ConsumerState<AddEditProductPage> {
                           label: 'Cost Price',
                           hint: '0.00',
                           keyboardType: TextInputType.number,
-                          prefixText: r'$ ',
+                          prefixText: '₦ ',
                         ),
                       ),
                       SizedBox(width: 16.w),
@@ -167,7 +178,7 @@ class _AddEditProductPageState extends ConsumerState<AddEditProductPage> {
                           label: 'Selling Price',
                           hint: '0.00',
                           keyboardType: TextInputType.number,
-                          prefixText: r'$ ',
+                          prefixText: '₦ ',
                         ),
                       ),
                     ],

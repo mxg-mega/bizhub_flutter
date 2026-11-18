@@ -35,11 +35,12 @@ class ExpenseRepositoryImpl implements ExpenseRepository {
     final tx = TransactionModel(
       id: const Uuid().v4(),
       businessId: expense.businessId,
-      type: 'expense',
+      type: 'Expense',
       amount: expense.amount,
       category: FinancialCategory.opex,
       subCategory: expense.category,
-      timestamp: expense.date,
+      createdAt: expense.date,
+      date: expense.date,
       description: expense.description ?? 'Expense: ${expense.category}',
       referenceId: expense.id,
     );

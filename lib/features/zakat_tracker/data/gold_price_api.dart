@@ -1,17 +1,26 @@
 import 'package:dio/dio.dart';
-import 'package:retrofit/retrofit.dart';
 import 'gold_price_model.dart';
 
-part 'gold_price_api.g.dart';
+class GoldPriceApi {
+  final Dio _dio;
+  final String _baseUrl;
 
-@RestApi(baseUrl: 'https://api.metalpriceapi.com/v1/')
-abstract class GoldPriceApi {
-  factory GoldPriceApi(final Dio dio, {final String baseUrl}) = _GoldPriceApi;
+  GoldPriceApi(this._dio, {final String baseUrl = 'https://api.metalpriceapi.com/v1/'})
+      : _baseUrl = baseUrl;
 
-  @GET('latest')
   Future<GoldPriceResponseModel> getGoldPrice({
-    @Query('api_key') required final String apiKey,
-    @Query('base') final String base = 'USD',
-    @Query('currencies') final String currencies = 'XAU',
-  });
+    required final String apiKey,
+    final String base = 'USD',
+    final String currencies = 'XAU',
+  }) async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      '${_baseUrl}latest',
+      queryParameters: <String, dynamic>{
+        'api_key': apiKey,
+        'base': base,
+        'currencies': currencies,
+      },
+    );
+    return GoldPriceResponseModel.fromJson(response.data!);
+  }
 }

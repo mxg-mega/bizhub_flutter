@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'package:json_annotation/json_annotation.dart';
 
 part 'business_model.g.dart';
@@ -73,6 +74,12 @@ class BusinessModel {
     this.updatedAt,
   });
 
+  String get currency =>
+      settings?['currency']?.toString() ??
+      settings?['currencyCode']?.toString() ??
+      'USD';
+
+
   factory BusinessModel.fromJson(final Map<String, dynamic> json) =>
       _$BusinessModelFromJson(json);
   Map<String, dynamic> toJson() => _$BusinessModelToJson(this);
@@ -97,6 +104,9 @@ class BusinessModel {
     final DateTime? createdAt,
     final DateTime? updatedAt,
   }) {
+    debugPrint(
+      '[debug] Copying BusinessModel with new values: id=$id, ownerId=$ownerId, enabledModules=$enabledModules, settings=$settings, createdAt=$createdAt, updatedAt=$updatedAt',
+    );
     return BusinessModel(
       id: id ?? this.id,
       name: name ?? this.name,

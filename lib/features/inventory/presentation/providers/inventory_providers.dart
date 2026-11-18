@@ -159,21 +159,65 @@ class InventoryActions extends _$InventoryActions {
   }
 
   Future<void> saveProduct(final ProductModel product) async {
+    final authState = ref.read(authProvider);
     final businessId = ref.read(currentBusinessProvider)?.id;
+    final user = authState.user;
     if (businessId == null) return;
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
-      await ref.read(productRepositoryProvider).saveProduct(businessId, product);
+      // Audit trail (web contract §3.5): stamp creator once, modifier always
+      final actorName = user?.name ?? 'Unknown';
+      final stamped = (product.createdBy == null)
+          ? product.copyWith(
+              createdBy: user?.id,
+              createdByName: actorName,
+              lastModifiedBy: user?.id,
+              lastModifiedByName: actorName,
+            )
+          : product.copyWith(
+              lastModifiedBy: user?.id,
+              lastModifiedByName: actorName,
+            );
+      await ref.read(productRepositoryProvider).saveProduct(businessId, stamped);
       ref.invalidate(productListProvider);
     });
   }
 
-  Future<void> archiveProduct(final String productId) async {
+  Future<void> archiveProduct(final String productId,
+      {final String? reason}) async {
+    final authState = ref.read(authProvider);
+    final businessId = ref.read(currentBusinessProvider)?.id;
+    final user = authState.user;
+    if (businessId == null) return;
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(() async {
+      await ref.read(productRepositoryProvider).archiveProduct(
+            businessId,
+            productId,
+            archivedBy: user?.id,
+            archivedByName: user?.name ?? 'Unknown',
+            archivedReason: reason,
+          );
+      ref.invalidate(productListProvider);
+    });
+  }
+
+  Future<void> deleteLocation(final String locationId) async {
     final businessId = ref.read(currentBusinessProvider)?.id;
     if (businessId == null) return;
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
-      await ref.read(productRepositoryProvider).archiveProduct(businessId, productId);
+      // Web parity (use-locations.tsx:98): block deleting a location that
+      // still holds stock — transfer stock out first.
+      final products = await ref.read(productRepositoryProvider).getProducts(businessId);
+      for (final product in products) {
+        final qty = product.stockByLocation[locationId] ?? 0.0;
+        if (qty > 0) {
+          throw Exception(
+              'Cannot delete "${locationId}" because it still contains stock. Please transfer stock first.');
+        }
+      }
+      await ref.read(locationRepositoryProvider).deleteLocation(businessId, locationId);
       ref.invalidate(productListProvider);
     });
   }

@@ -92,7 +92,7 @@ class _InventoryDashboardPageState extends ConsumerState<InventoryDashboardPage>
         children: [
           _buildStatCard('Total Items', products.length.toString(), Colors.blue),
           _buildStatCard('Low Stock', lowStockCount.toString(), Colors.orange),
-          _buildStatCard('Total Value', '\$${totalValue.toStringAsFixed(0)}', Colors.green),
+          _buildStatCard('Total Value', '₦${totalValue.toStringAsFixed(0)}', Colors.green),
         ],
       ),
     );
